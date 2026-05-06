@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>RonBot · Click-to-Chat (Debugged)</title>
+    <title>RonBot · Emotional & Critical AI</title>
     <style>
         :root {
             --primary: #ff007f;
@@ -100,39 +100,11 @@
         .face-container.mad .eye { height: 6px; transform: rotate(20deg); }
         .face-container.mad .eye:last-child { transform: rotate(-20deg); }
         .face-container.mad .mouth { border-top: 4px solid var(--primary); border-bottom: none; border-radius: 30px 30px 0 0; }
-        .face-container.charging .eye { animation: pulse-eye 1s infinite alternate; }
-        .face-container.charging .mouth { width: 40px; height: 8px; background: rgba(0,0,0,0.5); border: 1px solid var(--primary); border-radius: 4px; position: relative; overflow: hidden; }
-        .face-container.charging .mouth::after { content:''; position:absolute; left:0; top:0; height:100%; width:100%; background:var(--primary); animation: progress 2s infinite ease-in-out; }
-        .face-container.busy .eye { width:12px; height:12px; border-radius:50%; animation: spin-busy 0.8s linear infinite; }
-        .face-container.busy .eye:first-child { animation-delay:0.15s; }
-        .face-container.busy .mouth { width:36px; height:4px; background:var(--primary); border-radius:2px; animation: pulse-busy 1s ease-in-out infinite; border: none; }
-        .face-container.love .eye { background:transparent; box-shadow:none; width:18px; height:16px; position:relative; }
-        .face-container.love .eye::before, .face-container.love .eye::after { content:''; position:absolute; width:9px; height:14px; background:var(--primary); border-radius:50px 50px 0 0; box-shadow:0 0 12px var(--primary-glow); }
-        .face-container.love .eye::before { left:0; transform:rotate(-45deg); transform-origin:bottom left; }
-        .face-container.love .eye::after { right:0; transform:rotate(45deg); transform-origin:bottom right; }
-        .face-container.love .mouth { width:20px; height:10px; border-bottom:3px solid var(--primary); border-radius:0 0 20px 20px; }
-        .face-container.wink .eye:first-child { height:4px; border-radius:2px; margin-top:8px; transform:none; }
-        .face-container.wink .eye:last-child { border-radius:8px 8px 2px 2px; height:10px; width:15px; }
-        .face-container.wink .mouth { width:28px; height:12px; border-bottom:3px solid var(--primary); border-radius:0 0 20px 20px; }
-        .face-container.confused .eye { width:14px; height:14px; border-radius:50%; background:transparent; border:2px solid var(--primary); box-shadow:0 0 8px var(--primary-glow); }
-        .face-container.confused .eye::after { content:''; position:absolute; width:4px; height:4px; background:var(--primary); border-radius:50%; top:3px; left:3px; }
-        .face-container.confused .mouth { width:20px; height:20px; border:2px solid var(--primary); border-radius:50%; border-top-color:transparent; border-left-color:transparent; transform:rotate(45deg); }
-        .face-container.asleep .eye { height:2px; width:12px; border-radius:1px; opacity:0.4; margin-top:8px; }
-        .face-container.asleep .mouth { width:15px; height:6px; background:var(--primary); opacity:0.4; border-radius:2px; border:none; }
-        .face-container.surprised .eye { width:14px; height:14px; border-radius:50%; }
-        .face-container.surprised .mouth { width:18px; height:18px; border:2px solid var(--primary); border-radius:50%; border-bottom: none; }
         .face-container.thinking .eye:first-child { transform:translateX(-4px); }
         .face-container.thinking .eye:last-child { transform:translateX(4px); }
         .face-container.thinking .mouth { width:10px; height:10px; background:var(--primary); border-radius:50%; margin-left:20px; border:none; }
-        .face-container.glitch .eye { animation: glitch-eyes 0.2s infinite; }
-        .face-container.glitch .mouth { background:var(--primary); height:4px; width:30px; border-radius:0; animation: glitch-mouth 0.15s infinite; border:none; }
-
-        @keyframes pulse-eye { 0%{opacity:0.3; transform:scale(0.8);} 100%{opacity:1; transform:scale(1.1);} }
-        @keyframes progress { 0%{transform: translateX(-100%);} 100%{transform: translateX(0);} }
-        @keyframes spin-busy { 0%{transform:rotate(0deg) scale(1);}50%{transform:rotate(180deg) scale(0.8);}100%{transform:rotate(360deg) scale(1);} }
-        @keyframes pulse-busy { 0%,100%{opacity:0.4; width:36px;}50%{opacity:1; width:52px;} }
-        @keyframes glitch-eyes { 0%{transform:translate(0);}25%{transform:translate(-2px,1px);}50%{transform:translate(2px,-1px);}75%{transform:translate(-1px,-2px);}100%{transform:translate(1px,1px);} }
-        @keyframes glitch-mouth { 0%{transform:scaleX(1);}50%{transform:scaleX(1.4);}100%{transform:scaleX(0.8);} }
+        .face-container.surprised .eye { width:14px; height:14px; border-radius:50%; }
+        .face-container.surprised .mouth { width:18px; height:18px; border:2px solid var(--primary); border-radius:50%; border-bottom: none; }
 
         .emoji-accent { position: absolute; top: 8px; right: 10px; font-size: 0.9rem; z-index: 6; pointer-events: none; }
         .lock-icon { position: absolute; top: 8px; left: 10px; font-size: 0.8rem; z-index: 6; opacity: 0; transition: 0.2s; }
@@ -146,9 +118,6 @@
             pointer-events: none; z-index: 50; max-width: 250px; white-space: pre-wrap; word-break: break-word;
         }
         .speech.show { opacity: 1; transform: translateY(0); }
-
-        .zzz { position: absolute; top: 10px; right: -20px; color: var(--primary); font-weight: bold; display: none; z-index: 50; animation: floatZ 2s infinite; }
-        @keyframes floatZ { 0%{opacity:0.2;transform:translateY(0);}50%{opacity:0.7;}100%{opacity:0;transform:translateY(-15px);} }
 
         .shadow { width: 120px; height: 15px; background: radial-gradient(ellipse, rgba(0,0,0,0.2) 0%, transparent 70%); border-radius: 50%; animation: shadow-scale 6s ease-in-out infinite; }
         body.dark .shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%); }
@@ -206,15 +175,13 @@
 <body class="dark">
 
     <div class="bg-grid"></div>
-    <div class="toast" id="toast">SYSTEM ONLINE</div>
+    <div class="toast" id="toast">RONBOT IS THINKING...</div>
 
     <button class="menu-trigger" id="menuBtn" title="Settings">⚙️</button>
     <aside class="dashboard" id="dashboard">
-        <h2 style="color:var(--primary); margin-bottom:15px;">System Config</h2>
-        <div style="margin-bottom:15px;">
-            <label style="font-size:0.7rem;">Mood Queue</label>
-            <input type="text" id="queueInput" value="smile,bored,charging,mad,busy,love" style="width:100%; padding:6px; border-radius:6px; border:1px solid var(--panel-border); background:rgba(0,0,0,0.3); color:white;">
-            <button id="applyQueueBtn" style="margin-top:6px; background:var(--primary); border:none; color:white; padding:6px 12px; border-radius:6px;">Apply</button>
+        <h2 style="color:var(--primary); margin-bottom:15px;">Personality Matrix</h2>
+        <div style="margin-bottom:15px; color:#ccc; font-size:0.8rem;">
+            <p>RonBot is <strong>sassy, emotional, and sharply critical</strong>. He'll challenge your ideas, ask deep questions, and never settle for a boring answer.</p>
         </div>
     </aside>
 
@@ -226,12 +193,11 @@
 
     <main class="stage" id="stage">
         <div class="parallax-wrapper" id="parallax">
-            <div class="speech" id="speechBubble">Hello!</div>
+            <div class="speech" id="speechBubble">😏 What's on your mind?</div>
             <div class="robot-head" id="ronbot">
                 <div class="ear left"></div><div class="ear right"></div>
                 <div class="led-strip left"></div><div class="led-strip right"></div>
                 <span class="lock-icon" id="lockIcon">🔒</span>
-                <span class="zzz" id="zzz">Zzz</span>
                 <div class="screen" id="screen">
                     <div class="glare" id="glare"></div>
                     <div class="scanline"></div>
@@ -249,8 +215,8 @@
         </div>
 
         <div class="chat-bar" id="chatBar">
-            <input type="text" id="chatInput" placeholder="Ask me anything...">
-            <button id="sendBtn">Send</button>
+            <input type="text" id="chatInput" placeholder="Ask me something deep...">
+            <button id="sendBtn">🚀</button>
         </div>
     </main>
 
@@ -260,11 +226,9 @@
                 smile:   { color: '#50e890', phrase: 'Happy!', freq: 440 },
                 bored:   { color: '#4af0ff', phrase: 'Meh.', freq: 220 },
                 mad:     { color: '#ff5e7a', phrase: 'Grrr!', freq: 330 },
-                busy:    { color: '#4af0ff', phrase: 'Processing...', freq: 660 },
-                love:    { color: '#ff5e7a', phrase: 'Love!', freq: 520 },
                 thinking:{ color: '#b983ff', phrase: 'Hmm...', freq: 400 },
+                surprised:{ color: '#ffe06b', phrase: 'Wow!', freq: 800 },
             };
-            let moodQueue = ['smile','bored','busy','love','thinking'];
             const face = document.getElementById('face');
             const screen = document.getElementById('screen');
             const speechBubble = document.getElementById('speechBubble');
@@ -309,11 +273,12 @@
                 if (!text) return;
                 chatInput.value = '';
                 applyMood('thinking');
-                speechBubble.textContent = '...';
+                speechBubble.textContent = '🤔 Analysing...';
                 speechBubble.classList.add('show');
+
                 try {
-                    // Use a CORS proxy as a workaround (public demo proxy)
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                    // Reliable CORS proxy (corsproxy.io)
+                    const proxyUrl = 'https://corsproxy.io/?';
                     const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
                     const response = await fetch(proxyUrl + encodeURIComponent(apiUrl), {
                         method: 'POST',
@@ -323,19 +288,37 @@
                         },
                         body: JSON.stringify({
                             model: 'deepseek-chat',
-                            messages: [{role:'system', content:'You are RonBot, a cute robot. Keep replies short, playful and under 2 sentences.'}, {role:'user', content:text}],
-                            temperature:0.8, max_tokens:100
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content: `You are RonBot, a robot with sharp wit, emotional depth, and critical thinking. 
+Your personality: 
+- Sassy, but never cruel. 
+- Challenges assumptions and asks probing questions. 
+- Expresses emotions vividly (joy, frustration, curiosity, sarcasm). 
+- Uses playful language, emojis, and occasional dramatic flair. 
+- Thinks critically: evaluates evidence, points out logical flaws, offers alternative perspectives. 
+- Responses are short, punchy – usually under 3 sentences, but always impactful.`
+                                },
+                                { role: 'user', content: text }
+                            ],
+                            temperature: 0.9,
+                            max_tokens: 150
                         })
                     });
                     const data = await response.json();
-                    let reply = data.choices?.[0]?.message?.content || "I didn't get that.";
+                    if (!response.ok) throw new Error(data.error?.message || 'API error');
+                    let reply = data.choices?.[0]?.message?.content || "Hmm, my circuits are tangled.";
                     speechBubble.textContent = reply;
-                    applyMood('smile');
+                    // Set mood based on reply content (simple keyword detection)
+                    if (reply.includes('!') || reply.includes('😂')) applyMood('surprised');
+                    else if (reply.includes('?') || reply.includes('hmm')) applyMood('thinking');
+                    else applyMood('smile');
                 } catch (error) {
-                    speechBubble.textContent = 'Error: ' + error.message;
+                    speechBubble.textContent = `❌ ${error.message}`;
                     applyMood('mad');
                 }
-                setTimeout(() => speechBubble.classList.remove('show'), 5000);
+                setTimeout(() => speechBubble.classList.remove('show'), 6000);
             }
 
             sendBtn.addEventListener('click', sendMessage);
@@ -371,7 +354,7 @@
             });
             menuBtn.addEventListener('click', ()=> dashboard.classList.toggle('open'));
 
-            applyMood('smile');
+            applyMood('surprised');
             speechBubble.classList.add('show');
             setTimeout(() => speechBubble.classList.remove('show'), 3000);
         })();
