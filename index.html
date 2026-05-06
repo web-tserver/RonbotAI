@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>RonBot OS Pro · Eyes Follow Mouse</title>
+    <title>RonBot OS Pro · DeepSeek AI Chat</title>
     <style>
         :root {
             --primary: #ff007f;
@@ -128,18 +128,17 @@
             width: 16px; height: 16px; background: var(--primary); border-radius: 4px;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             box-shadow: 0 0 15px var(--primary-glow);
-            position: relative; overflow: hidden; /* so pupil stays inside */
+            position: relative; overflow: hidden;
             display: flex; align-items: center; justify-content: center;
         }
-        /* Pupil for mouse tracking */
         .pupil {
             width: 6px; height: 6px; background: #fff; border-radius: 2px;
-            position: absolute; transition: transform 0.05s linear; /* fast follow */
+            position: absolute; transition: transform 0.05s linear;
             box-shadow: 0 0 6px rgba(255,255,255,0.8);
         }
         .mouth { height: 14px; width: 60px; border-bottom: 4px solid var(--primary); border-radius: 0 0 30px 30px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); filter: drop-shadow(0 4px 10px var(--primary-glow)); }
 
-        /* All mood classes */
+        /* Moods */
         .face-container.bored .eye { height: 6px; border-radius: 2px; transform: translateY(5px); opacity: 0.6; }
         .face-container.bored .mouth { width: 20px; height: 4px; background: var(--primary); border-radius: 2px; border: none; opacity: 0.6; }
         .face-container.mad .eye { height: 6px; transform: rotate(20deg); }
@@ -188,7 +187,7 @@
             padding: 8px 16px; border-radius: 12px 12px 12px 0; font-size: 0.85rem; font-weight: bold;
             border: 1px solid var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 15px var(--primary-glow);
             opacity: 0; transform: translateY(10px) translateZ(30px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none; z-index: 50;
+            pointer-events: none; z-index: 50; max-width: 250px; white-space: pre-wrap; word-break: break-word;
         }
         .speech.show { opacity: 1; transform: translateY(0) translateZ(30px); }
 
@@ -217,8 +216,47 @@
         body.dark .shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%); }
         @keyframes shadow-scale { 0%,100%{transform:scale(1); opacity:0.8;} 50%{transform:scale(0.8); opacity:0.4;} }
 
+        /* Chat panel styles */
+        .chat-panel {
+            position: fixed; bottom: 20px; left: 20px; width: 300px; max-height: 400px;
+            background: var(--panel-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border); border-radius: 20px;
+            padding: 16px; z-index: 200; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column;
+            transform: translateY(120%); transition: transform 0.3s ease;
+        }
+        .chat-panel.open { transform: translateY(0); }
+        .chat-messages {
+            flex: 1; overflow-y: auto; margin-bottom: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .message {
+            padding: 8px 12px; border-radius: 12px; max-width: 80%;
+            font-size: 0.8rem; line-height: 1.4;
+        }
+        .message.user {
+            align-self: flex-end; background: var(--primary); color: white;
+        }
+        .message.assistant {
+            align-self: flex-start; background: rgba(255,255,255,0.1); color: var(--text-color);
+        }
+        .chat-input-area {
+            display: flex; gap: 8px;
+        }
+        .chat-input {
+            flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border);
+            color: var(--text-color); padding: 8px 12px; border-radius: 8px;
+            outline: none; font-size: 0.8rem;
+        }
+        .chat-input:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+        .send-btn {
+            background: var(--primary); border: none; color: white; padding: 8px 16px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem;
+        }
+        .send-btn:hover { box-shadow: 0 0 15px var(--primary-glow); }
+
         @media (max-width: 600px) {
-            .dashboard { width: 260px; padding: 16px; }
+            .dashboard, .chat-panel { width: 260px; }
             .quick-toggles { gap: 8px; }
             .toggle-btn { width: 40px; height: 40px; font-size: 1rem; }
         }
@@ -231,6 +269,7 @@
 
     <button class="toggle-btn menu-trigger" id="menuBtn" title="Dashboard">⚙️</button>
     <div class="quick-toggles">
+        <button class="toggle-btn" id="chatToggle" title="AI Chat">💬</button>
         <button class="toggle-btn" id="cameraToggle" title="Face Tracking">📷</button>
         <button class="toggle-btn" id="voiceToggle" title="Voice Control">🎤<div class="mic-ring"></div></button>
         <button class="toggle-btn" id="soundToggle" title="Sound Effects">🔇</button>
@@ -284,6 +323,17 @@
             <label style="font-size: 0.65rem; opacity: 0.5; display:block; text-align:center;">RONBOT OS v3.0</label>
         </div>
     </aside>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">Ask me anything!</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Type a message...">
+            <button class="send-btn" id="sendBtn">Send</button>
+        </div>
+    </div>
 
     <div class="pip-monitor" id="pipMonitor">
         <video id="webcamVideo" autoplay muted playsinline></video>
@@ -362,7 +412,6 @@
             const glare = document.getElementById('glare');
             const toast = document.getElementById('toast');
             const pupils = document.querySelectorAll('.pupil');
-            const eyes = document.querySelectorAll('.eye');
 
             const menuBtn = document.getElementById('menuBtn');
             const dashboard = document.getElementById('dashboard');
@@ -384,6 +433,12 @@
             const cameraToggle = document.getElementById('cameraToggle');
             const voiceToggle = document.getElementById('voiceToggle');
             const soundToggle = document.getElementById('soundToggle');
+            const chatToggle = document.getElementById('chatToggle');
+            const chatPanel = document.getElementById('chatPanel');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+
             const pipMonitor = document.getElementById('pipMonitor');
             const webcamVideo = document.getElementById('webcamVideo');
 
@@ -412,12 +467,12 @@
                 localStorage.setItem('robotMoodIdx', currentIdx);
             }
 
-            function showPhrase(mood) {
-                const phrase = getMoodDef(mood).phrase;
+            function showPhrase(mood, customPhrase = null) {
+                const phrase = customPhrase || getMoodDef(mood).phrase;
                 speechBubble.textContent = phrase;
                 speechBubble.classList.add('show');
                 clearTimeout(window.speechTimer);
-                window.speechTimer = setTimeout(() => speechBubble.classList.remove('show'), 2000);
+                window.speechTimer = setTimeout(() => speechBubble.classList.remove('show'), 4000);
             }
 
             function playBeep(freq) {
@@ -461,32 +516,24 @@
                 }, 6000);
             }
 
-            // ---- MOUSE EYE TRACKING ----
+            // Eye tracking
             function updatePupils(mouseX, mouseY) {
                 const screenRect = screen.getBoundingClientRect();
-                // Check if mouse is inside the screen
-                if (
-                    mouseX >= screenRect.left && mouseX <= screenRect.right &&
-                    mouseY >= screenRect.top && mouseY <= screenRect.bottom
-                ) {
+                if (mouseX >= screenRect.left && mouseX <= screenRect.right &&
+                    mouseY >= screenRect.top && mouseY <= screenRect.bottom) {
                     const centerX = screenRect.left + screenRect.width / 2;
                     const centerY = screenRect.top + screenRect.height / 2;
-                    // Max displacement for pupil (relative to eye size)
-                    const maxDx = 4; // pixels
+                    const maxDx = 4;
                     const maxDy = 4;
                     const dx = ((mouseX - centerX) / (screenRect.width / 2)) * maxDx;
                     const dy = ((mouseY - centerY) / (screenRect.height / 2)) * maxDy;
-                    pupils.forEach(p => {
-                        p.style.transform = `translate(${dx}px, ${dy}px)`;
-                    });
+                    pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
                 } else {
-                    // Reset to center
                     pupils.forEach(p => p.style.transform = 'translate(0, 0)');
                 }
             }
 
             document.addEventListener('mousemove', (e) => {
-                // Parallax
                 const x = (window.innerWidth / 2 - e.pageX) / 25;
                 const y = (window.innerHeight / 2 - e.pageY) / 25;
                 parallax.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
@@ -494,7 +541,6 @@
                 const relX = (e.clientX - rect.left) / rect.width;
                 const relY = (e.clientY - rect.top) / rect.height;
                 glare.style.transform = `translate(${(relX - 0.5) * 30}px, ${(relY - 0.5) * 30}px) rotate(15deg)`;
-                // Pupil tracking
                 updatePupils(e.clientX, e.clientY);
                 resetIdle();
             });
@@ -502,6 +548,74 @@
                 parallax.style.transform = '';
                 glare.style.transform = 'rotate(15deg)';
                 pupils.forEach(p => p.style.transform = 'translate(0, 0)');
+            });
+
+            // Chat functionality
+            chatToggle.addEventListener('click', () => {
+                chatPanel.classList.toggle('open');
+                chatToggle.classList.toggle('active');
+                if (chatPanel.classList.contains('open')) {
+                    chatInput.focus();
+                }
+            });
+
+            // DeepSeek API configuration (YOUR PROVIDED KEY)
+            const DEEPSEEK_API_KEY = 'sk-2617e54901324f42a53521c1473139d8';
+            const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+            async function fetchAIResponse(message) {
+                try {
+                    const response = await fetch(DEEPSEEK_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-chat',
+                            messages: [
+                                { role: 'system', content: 'You are a friendly AI robot named RonBot. Keep responses short and playful.' },
+                                { role: 'user', content: message }
+                            ],
+                            temperature: 0.7,
+                            max_tokens: 150
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.choices && data.choices.length > 0) {
+                        return data.choices[0].message.content;
+                    } else {
+                        return "Hmm, I couldn't understand that.";
+                    }
+                } catch (error) {
+                    return "Oops, I'm having trouble connecting to my brain right now.";
+                }
+            }
+
+            async function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text) return;
+                addMessage('user', text);
+                chatInput.value = '';
+                applyMood('thinking');
+                showPhrase('thinking', 'Thinking...');
+                const aiReply = await fetchAIResponse(text);
+                addMessage('assistant', aiReply);
+                showPhrase('smile', aiReply);
+                applyMood('smile');
+            }
+
+            function addMessage(role, content) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${role}`;
+                msgDiv.textContent = content;
+                chatMessages.appendChild(msgDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
             });
 
             // Dashboard & UI
@@ -526,7 +640,6 @@
                 }
             });
 
-            // Playlists
             const playlists = JSON.parse(localStorage.getItem('moodPlaylists') || '{}');
             function updatePlaylistSelect() {
                 playlistSelect.innerHTML = '<option value="">Load playlist...</option>';
@@ -558,7 +671,6 @@
                 }
             });
 
-            // Export/Import
             exportBtn.addEventListener('click', () => {
                 const data = { queue: moodQueue, customMoods };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -592,7 +704,6 @@
                 reader.readAsText(file);
             });
 
-            // Custom moods
             addCustomMoodBtn.addEventListener('click', () => {
                 const eye = customEyeSelect.value;
                 const mouth = customMouthSelect.value;
@@ -606,7 +717,6 @@
                 showToast(`Custom mood "${name}" added`);
             });
 
-            // Toggles
             darkToggle.addEventListener('click', () => {
                 body.classList.toggle('dark');
                 darkToggle.classList.toggle('active');
@@ -619,7 +729,6 @@
                 soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
             });
 
-            // Voice recognition
             voiceToggle.addEventListener('click', () => {
                 voiceEnabled = !voiceEnabled;
                 voiceToggle.classList.toggle('active', voiceEnabled);
@@ -647,7 +756,6 @@
                 }
             });
 
-            // Camera tracking
             async function setupCamera(active) {
                 if (active) {
                     try {
@@ -686,16 +794,13 @@
                 setupCamera(cameraEnabled);
             });
 
-            // Keyboard, drag, double-click lock
+            // Keyboard and drag
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'ArrowRight') changeMood((currentIdx + 1) % moodQueue.length);
                 else if (e.key === 'ArrowLeft') changeMood((currentIdx - 1 + moodQueue.length) % moodQueue.length);
                 else if (e.key === 'ArrowUp') changeMood(Math.floor(Math.random() * moodQueue.length));
                 else if (e.key === 'ArrowDown') { moodQueue = Object.keys(defaultMoods); currentIdx = 0; applyMood(moodQueue[0]); resetAutoCycle(); }
-                else if (e.key >= '1' && e.key <= '9') {
-                    const idx = parseInt(e.key) - 1;
-                    if (idx < moodQueue.length) changeMood(idx);
-                }
+                else if (e.key >= '1' && e.key <= '9') { const idx = parseInt(e.key) - 1; if (idx < moodQueue.length) changeMood(idx); }
                 else if (e.key === ' ') { e.preventDefault(); changeMood(Math.floor(Math.random() * moodQueue.length)); }
             });
 
