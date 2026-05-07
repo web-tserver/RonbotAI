@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action: manipulation">
-    <title>RonBot · Playground Fixed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+    <title>RonBot · 3D Pinball Throw</title>
     <style>
         :root {
             --primary: #ff007f;
@@ -14,6 +14,7 @@
             --head-bg-dark: #1a1f2b;
             --screen-bg: #0d1117;
             --text-color: #333;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         body.dark {
             --bg-light: var(--bg-dark);
@@ -26,6 +27,7 @@
             background: var(--bg-light);
             color: var(--text-color);
             min-height:100vh;
+            min-height: -webkit-fill-available;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -33,80 +35,103 @@
             overflow: hidden;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            position: fixed;
+            inset: 0;
         }
         .bg-grid {
             position:fixed; inset:0; z-index:0; pointer-events:none;
-            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
             background-size: 40px 40px;
         }
 
-        /* ---- Robot wrapper ---- */
+        /* Flash overlay for electric destruction */
+        .flash-overlay {
+            position:fixed; inset:0; z-index:999; pointer-events:none;
+            background: rgba(255,255,255,0.9); opacity:0; transition: opacity 0.1s;
+        }
+        .flash-overlay.active { opacity:1; }
+
+        /* Electric bolts */
+        .bolt {
+            position:fixed; z-index:1000; pointer-events:none;
+            background: #fff; height: 3px; opacity:0;
+            box-shadow: 0 0 15px #4af0ff, 0 0 30px #00e5ff;
+            transform-origin: left center;
+            animation: bolt-strike 0.5s ease-out forwards;
+        }
+        @keyframes bolt-strike {
+            0% { opacity:0; width:0; }
+            20% { opacity:1; width:var(--w); }
+            80% { opacity:1; }
+            100% { opacity:0; }
+        }
+
+        /* 3D perspective container */
         .robot-wrapper {
-            position: relative;
-            width: min(220px, 50vmin);
-            height: min(220px, 50vmin);
+            position: fixed;
+            width: min(200px, 45vmin);
+            height: min(200px, 45vmin);
             cursor: grab;
-            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.1, 1.8);
             z-index: 10;
+            perspective: 600px;
+            transform-style: preserve-3d;
+            transition: none;
+            will-change: left, top, transform;
         }
         .robot-wrapper:active { cursor: grabbing; }
-        .robot-wrapper.dragging { transition: none; }
 
         .robot-head {
             width: 100%; height: 100%;
             background: var(--head-bg-light);
-            border-radius: 32px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.15), inset 0 8px 25px rgba(255,255,255,0.5), inset 0 -10px 20px rgba(0,0,0,0.05);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15), inset 0 6px 20px rgba(255,255,255,0.5), inset 0 -8px 15px rgba(0,0,0,0.05);
             position: relative;
-            animation: float 6s ease-in-out infinite;
-            transition: background 0.4s, box-shadow 0.4s;
+            animation: float 5s ease-in-out infinite;
+            transition: background 0.4s;
             display: flex;
             align-items: center;
             justify-content: center;
+            transform-style: preserve-3d;
+            will-change: transform;
         }
         body.dark .robot-head {
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 8px 25px rgba(255,255,255,0.05), inset 0 -10px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 6px 20px rgba(255,255,255,0.05), inset 0 -8px 15px rgba(0,0,0,0.4);
         }
-        @keyframes float {
-            0%,100%{ transform: translateY(0); }
-            50%{ transform: translateY(-12px); }
-        }
+        @keyframes float { 0%,100%{ transform: translateY(0) rotateX(0) rotateY(0); } 50%{ transform: translateY(-10px) rotateX(2deg) rotateY(0); } }
 
         .ear {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 14px; height: 45%; background: #3a4a5a; border-radius: 7px; z-index: -1;
+            width: 12px; height: 42%; background: #3a4a5a; border-radius: 6px; z-index: -1;
         }
-        .ear.left { left: -8px; } .ear.right { right: -8px; }
+        .ear.left { left: -7px; } .ear.right { right: -7px; }
 
         .led-strip {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 5px; height: 50%; border-radius: 3px;
-            background: var(--primary); box-shadow: 0 0 12px var(--primary-glow);
-            z-index: 20; opacity: 0.8; transition: background 0.3s, box-shadow 0.3s;
+            width: 4px; height: 45%; border-radius: 2px;
+            background: var(--primary); box-shadow: 0 0 10px var(--primary-glow);
+            z-index: 20; opacity: 0.7; transition: background 0.3s;
         }
-        .led-strip.left { left: 14px; } .led-strip.right { right: 14px; }
+        .led-strip.left { left: 12px; } .led-strip.right { right: 12px; }
 
         .antenna {
-            position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
-            width: 6px; height: 36px; background: #4a5a6a; border-radius: 4px 4px 0 0; z-index: 6;
+            position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
+            width: 5px; height: 30px; background: #4a5a6a; border-radius: 3px 3px 0 0; z-index: 6;
         }
         .antenna::after {
-            content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-            width: 16px; height: 16px; background: var(--primary); border-radius: 50%;
-            box-shadow: 0 0 18px var(--primary), 0 0 35px var(--primary-glow);
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 14px; height: 14px; background: var(--primary); border-radius: 50%;
+            box-shadow: 0 0 15px var(--primary), 0 0 30px var(--primary-glow);
             animation: antenna-pulse 2s infinite;
         }
-        @keyframes antenna-pulse {
-            0%,100%{ opacity: 0.8; transform: translateX(-50%) scale(1); }
-            50%{ opacity: 1; transform: translateX(-50%) scale(1.25); }
-        }
+        @keyframes antenna-pulse { 0%,100%{ opacity: 0.7; transform: translateX(-50%) scale(1); } 50%{ opacity: 1; transform: translateX(-50%) scale(1.2); } }
 
         .screen {
             width: 75%; height: 75%;
             background: var(--screen-bg);
-            border-radius: 20px;
+            border-radius: 18px;
             border: 3px solid var(--primary);
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 0 30px var(--primary-glow);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.7), 0 0 25px var(--primary-glow);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -115,21 +140,14 @@
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .face-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-            z-index: 2;
-            position: relative;
-        }
-        .eyes { display: flex; gap: 30px; position: relative; }
+        .face-container { display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 2; position: relative; }
+        .eyes { display: flex; gap: 26px; position: relative; }
         .eye {
-            width: 18px; height: 18px;
+            width: 16px; height: 16px;
             background: var(--primary);
             border-radius: 4px;
             transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-            box-shadow: 0 0 15px var(--primary-glow);
+            box-shadow: 0 0 12px var(--primary-glow);
             position: relative;
             overflow: hidden;
             display: flex;
@@ -137,160 +155,203 @@
             justify-content: center;
         }
         .pupil {
-            width: 8px; height: 8px;
+            width: 7px; height: 7px;
             background: #fff;
             border-radius: 2px;
             position: absolute;
-            transition: transform 0.05s linear;
-            box-shadow: 0 0 8px rgba(255,255,255,0.9);
+            transition: transform 0.08s linear;
+            box-shadow: 0 0 6px rgba(255,255,255,0.8);
         }
         .mouth {
-            height: 14px; width: 60px;
-            border-bottom: 4px solid var(--primary);
-            border-radius: 0 0 30px 30px;
+            height: 12px; width: 50px;
+            border-bottom: 3px solid var(--primary);
+            border-radius: 0 0 25px 25px;
             transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-            filter: drop-shadow(0 4px 10px var(--primary-glow));
+            filter: drop-shadow(0 3px 8px var(--primary-glow));
         }
 
-        /* Mood styles (full set) */
-        .face-container.smile .eye { border-radius:10px 10px 2px 2px; height:10px; width:18px; background:#50e890; }
+        /* Moods (full set) */
+        .face-container.smile .eye { border-radius:8px 8px 2px 2px; height:9px; width:16px; background:#50e890; }
         .face-container.smile .mouth { border-bottom-color:#50e890; }
-        .face-container.bored .eye { height:5px; border-radius:2px; transform:translateY(6px); opacity:0.6; background:var(--primary); }
-        .face-container.bored .mouth { width:20px; height:4px; background:var(--primary); border-radius:2px; border:none; opacity:0.6; }
-        .face-container.mad .eye { height:6px; transform:rotate(20deg); background:#ff5e7a; }
-        .face-container.mad .eye:last-child { transform:rotate(-20deg); }
-        .face-container.mad .mouth { border-top:4px solid #ff5e7a; border-bottom:none; border-radius:30px 30px 0 0; }
-        .face-container.thinking .eye:first-child { transform:translateX(-4px); }
-        .face-container.thinking .eye:last-child { transform:translateX(4px); }
-        .face-container.thinking .mouth { width:12px; height:12px; background:var(--primary); border-radius:50%; margin-left:20px; border:none; }
-        .face-container.surprised .eye { width:18px; height:18px; border-radius:50%; background:#ffe06b; }
-        .face-container.surprised .mouth { width:24px; height:24px; border:3px solid #ffe06b; border-radius:50%; border-bottom:none; }
-        .face-container.love .eye { background:transparent; box-shadow:none; width:20px; height:18px; position:relative; }
-        .face-container.love .eye::before, .face-container.love .eye::after { content:''; position:absolute; width:10px; height:16px; background:#ff5e7a; border-radius:50px 50px 0 0; box-shadow:0 0 12px rgba(255,94,122,0.6); }
+        .face-container.bored .eye { height:4px; border-radius:2px; transform:translateY(5px); opacity:0.5; background:var(--primary); }
+        .face-container.bored .mouth { width:16px; height:3px; background:var(--primary); border-radius:2px; border:none; opacity:0.5; }
+        .face-container.mad .eye { height:5px; transform:rotate(18deg); background:#ff5e7a; }
+        .face-container.mad .eye:last-child { transform:rotate(-18deg); }
+        .face-container.mad .mouth { border-top:3px solid #ff5e7a; border-bottom:none; border-radius:25px 25px 0 0; }
+        .face-container.thinking .eye:first-child { transform:translateX(-3px); }
+        .face-container.thinking .eye:last-child { transform:translateX(3px); }
+        .face-container.thinking .mouth { width:10px; height:10px; background:var(--primary); border-radius:50%; margin-left:18px; border:none; }
+        .face-container.surprised .eye { width:16px; height:16px; border-radius:50%; background:#ffe06b; }
+        .face-container.surprised .mouth { width:20px; height:20px; border:3px solid #ffe06b; border-radius:50%; border-bottom:none; }
+        .face-container.love .eye { background:transparent; box-shadow:none; width:18px; height:16px; position:relative; }
+        .face-container.love .eye::before, .face-container.love .eye::after { content:''; position:absolute; width:9px; height:14px; background:#ff5e7a; border-radius:50px 50px 0 0; box-shadow:0 0 10px rgba(255,94,122,0.6); }
         .face-container.love .eye::before { left:0; transform:rotate(-45deg); transform-origin:bottom left; }
         .face-container.love .eye::after { right:0; transform:rotate(45deg); transform-origin:bottom right; }
-        .face-container.love .mouth { width:22px; height:12px; border-bottom:3px solid #ff5e7a; border-radius:0 0 20px 20px; }
-        .face-container.wink .eye:first-child { height:4px; border-radius:2px; margin-top:8px; transform:none; background:var(--primary); }
-        .face-container.wink .eye:last-child { border-radius:10px 10px 2px 2px; height:10px; width:18px; background:#ffe06b; }
+        .face-container.love .mouth { width:20px; height:10px; border-bottom:3px solid #ff5e7a; border-radius:0 0 18px 18px; }
+        .face-container.wink .eye:first-child { height:3px; border-radius:2px; margin-top:7px; transform:none; background:var(--primary); }
+        .face-container.wink .eye:last-child { border-radius:8px 8px 2px 2px; height:9px; width:16px; background:#ffe06b; }
         .face-container.wink .mouth { border-bottom-color:#ffe06b; }
-        .face-container.confused .eye { width:16px; height:16px; border-radius:50%; background:transparent; border:2px solid var(--primary); box-shadow:0 0 8px var(--primary-glow); }
-        .face-container.confused .eye::after { content:''; position:absolute; width:4px; height:4px; background:var(--primary); border-radius:50%; top:4px; left:4px; }
-        .face-container.confused .mouth { width:22px; height:22px; border:2px solid var(--primary); border-radius:50%; border-top-color:transparent; border-left-color:transparent; transform:rotate(45deg); }
-        .face-container.asleep .eye { height:3px; width:14px; border-radius:2px; opacity:0.5; margin-top:8px; background:#fff; }
-        .face-container.asleep .mouth { width:16px; height:6px; background:#fff; opacity:0.5; border-radius:2px; border:none; }
+        .face-container.confused .eye { width:14px; height:14px; border-radius:50%; background:transparent; border:2px solid var(--primary); box-shadow:0 0 6px var(--primary-glow); }
+        .face-container.confused .eye::after { content:''; position:absolute; width:3px; height:3px; background:var(--primary); border-radius:50%; top:3px; left:3px; }
+        .face-container.confused .mouth { width:20px; height:20px; border:2px solid var(--primary); border-radius:50%; border-top-color:transparent; border-left-color:transparent; transform:rotate(45deg); }
+        .face-container.asleep .eye { height:2px; width:12px; border-radius:1px; opacity:0.4; margin-top:7px; background:#fff; }
+        .face-container.asleep .mouth { width:14px; height:5px; background:#fff; opacity:0.4; border-radius:2px; border:none; }
         .face-container.glitch .eye { animation:glitch-eyes 0.15s infinite; background:#ff5e7a; }
-        .face-container.glitch .mouth { background:#ff5e7a; height:4px; width:30px; border-radius:0; animation:glitch-mouth 0.1s infinite; border:none; }
+        .face-container.glitch .mouth { background:#ff5e7a; height:3px; width:28px; border-radius:0; animation:glitch-mouth 0.1s infinite; border:none; }
         @keyframes glitch-eyes { 0%{transform:translate(0);}25%{transform:translate(-2px,1px);}50%{transform:translate(2px,-1px);}75%{transform:translate(-1px,-2px);}100%{transform:translate(1px,1px);} }
-        @keyframes glitch-mouth { 0%{transform:scaleX(1);}50%{transform:scaleX(1.5);}100%{transform:scaleX(0.7);} }
-        .face-container.charging .eye { animation:pulse-eye 1s infinite alternate; background:#50e890; }
-        .face-container.charging .mouth { width:40px; height:8px; background:rgba(0,0,0,0.5); border:1px solid #50e890; border-radius:4px; position:relative; overflow:hidden; }
-        .face-container.charging .mouth::after { content:''; position:absolute; left:0; top:0; height:100%; width:100%; background:#50e890; animation:progress 2s infinite ease-in-out; }
-        @keyframes pulse-eye { 0%{opacity:0.4;transform:scale(0.8);}100%{opacity:1;transform:scale(1.1);} }
-        @keyframes progress { 0%{transform:translateX(-100%);}100%{transform:translateX(0);} }
-        .face-container.busy .eye { width:10px; height:10px; border-radius:50%; animation:spin-busy 0.6s linear infinite; background:var(--primary); }
+        @keyframes glitch-mouth { 0%{transform:scaleX(1);}50%{transform:scaleX(1.4);}100%{transform:scaleX(0.6);} }
+        .face-container.busy .eye { width:9px; height:9px; border-radius:50%; animation:spin-busy 0.6s linear infinite; background:var(--primary); }
         .face-container.busy .eye:first-child { animation-delay:0.1s; }
-        .face-container.busy .mouth { width:36px; height:4px; background:var(--primary); border-radius:2px; animation:pulse-busy 1s ease-in-out infinite; border:none; }
+        .face-container.busy .mouth { width:32px; height:3px; background:var(--primary); border-radius:2px; animation:pulse-busy 1s ease-in-out infinite; border:none; }
         @keyframes spin-busy { 0%{transform:rotate(0) scale(1);}50%{transform:rotate(180deg) scale(0.7);}100%{transform:rotate(360deg) scale(1);} }
-        @keyframes pulse-busy { 0%,100%{opacity:0.4;width:36px;}50%{opacity:1;width:50px;} }
-        .face-container.purring .eye { height:2px; border-radius:2px; transform:translateY(6px); background:#ff9f9f; }
-        .face-container.purring .mouth { width:18px; height:4px; background:#ff9f9f; border:none; opacity:0.7; }
-        .face-container.dizzy .eye { width:10px; height:14px; border-radius:50%; animation:spin-eye 0.3s infinite; background:#ffe06b; }
+        @keyframes pulse-busy { 0%,100%{opacity:0.3;width:32px;}50%{opacity:1;width:44px;} }
+        .face-container.purring .eye { height:2px; border-radius:2px; transform:translateY(5px); background:#ff9f9f; }
+        .face-container.purring .mouth { width:16px; height:3px; background:#ff9f9f; border:none; opacity:0.6; }
+        .face-container.dizzy .eye { width:9px; height:12px; border-radius:50%; animation:spin-eye 0.3s infinite; background:#ffe06b; }
         @keyframes spin-eye { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
 
-        /* Accessories - fixed glasses position */
-        .accessory {
-            position: absolute; pointer-events: none; z-index: 30;
-            font-size: 2.2rem; text-shadow: 0 0 10px var(--primary-glow);
+        /* Speech bubble on the right */
+        .speech-bubble {
+            position: absolute;
+            top: -10px;
+            right: -70px;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 50;
+            border: 1px solid var(--primary);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transform: scale(0.9);
         }
-        .accessory.hat { top: -40px; left: 50%; transform: translateX(-50%); }
-        /* Glasses now inside face-container, positioned over eyes */
-        .accessory.glasses {
-            top: -5px; left: 50%; transform: translateX(-50%);
-            font-size: 2.8rem; letter-spacing: 8px; /* emoji glasses */
-            background: none; color: #333; text-shadow: 0 0 5px rgba(255,255,255,0.8);
+        .speech-bubble.show {
+            opacity: 1;
+            transform: scale(1);
+            animation: bubble-pop 0.4s ease-out;
         }
-
-        /* Toast */
-        .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 20px);
-            background: var(--primary); color: white; padding: 10px 24px; border-radius: 30px;
-            font-size: 0.8rem; font-weight: bold; z-index: 200; opacity: 0; transition: 0.3s;
-            pointer-events: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        @keyframes bubble-pop {
+            0% { transform: scale(0.8); }
+            60% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -6px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 6px solid rgba(0,0,0,0.85);
+        }
 
         .streak-counter {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--primary); color: white; padding: 6px 16px; border-radius: 20px;
-            font-weight: bold; z-index: 200; opacity: 0; transition: 0.3s;
+            position: fixed;
+            top: max(20px, env(safe-area-inset-top));
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         .streak-counter.show { opacity: 1; }
 
+        .toast {
+            position: fixed;
+            bottom: max(30px, var(--safe-bottom));
+            left: 50%;
+            transform: translate(-50%, 20px);
+            background: var(--primary);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
         .quick-toggles {
-            position: fixed; top: 20px; right: 20px; display: flex; gap: 12px; z-index: 100;
+            position: fixed;
+            top: max(20px, env(safe-area-inset-top));
+            right: 16px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
         }
         .toggle-btn {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
-            font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
-            color: #eee; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #eee;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
-        .toggle-btn:hover { transform: translateY(-2px); }
+        .toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 15px var(--primary-glow); }
 
-        /* Explosion particles */
-        .particle {
-            position: absolute; width: 8px; height: 8px; border-radius: 50%;
-            background: var(--primary); pointer-events: none; z-index: 999;
-            animation: particle-fly 0.8s ease-out forwards;
-        }
-        @keyframes particle-fly {
-            0% { opacity: 1; transform: translate(0,0) scale(1); }
-            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
-        }
-
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
-        @keyframes shake {
-            0%,100%{ transform: translate(0,0); }
-            10%,30%,50%,70%,90%{ transform: translate(-10px, 2px); }
-            20%,40%,60%,80%{ transform: translate(10px, -2px); }
+        @media (max-width: 400px) {
+            .robot-wrapper { width: 170px; height: 170px; }
+            .speech-bubble { font-size: 0.7rem; padding: 6px 10px; right: -60px; }
+            .toggle-btn { width: 36px; height: 36px; font-size: 0.9rem; }
         }
     </style>
 </head>
 <body class="dark">
 
 <div class="bg-grid"></div>
-<div class="toast" id="toast">👋 Hello!</div>
-<div class="streak-counter" id="streakCounter">🔥 0</div>
+<div class="flash-overlay" id="flashOverlay"></div>
+<div class="toast" id="toast"></div>
+<div class="streak-counter" id="streakCounter">⚡ 0</div>
 
 <div class="quick-toggles">
     <button class="toggle-btn active" id="vibrateToggle" title="Vibration">📳</button>
-    <button class="toggle-btn" id="soundToggle" title="Sound">🔇</button>
+    <button class="toggle-btn active" id="soundToggle" title="Sound">🔊</button>
     <button class="toggle-btn active" id="darkToggle" title="Dark/Light">🌓</button>
 </div>
 
 <div class="robot-wrapper" id="robotWrapper">
+    <div class="speech-bubble" id="speechBubble"></div>
     <div class="robot-head" id="ronbot">
         <div class="antenna"></div>
         <div class="ear left"></div>
         <div class="ear right"></div>
         <div class="led-strip left"></div>
         <div class="led-strip right"></div>
-
         <div class="screen">
             <div class="face-container" id="face">
-                <div class="eyes" id="eyesArea">
+                <div class="eyes">
                     <div class="eye"><div class="pupil"></div></div>
                     <div class="eye"><div class="pupil"></div></div>
-                    <!-- Glasses now inside eyes area for correct placement -->
-                    <span class="accessory glasses" id="glassesAccessory" style="display:none;">👓</span>
                 </div>
                 <div class="mouth"></div>
             </div>
-            <span class="accessory hat" id="hatAccessory" style="display:none;">🎩</span>
         </div>
     </div>
 </div>
@@ -298,51 +359,77 @@
 <script>
     (() => {
         const moodDefs = {
-            smile:    { color: '#50e890', freq: 440, emoji: '😊' },
-            bored:    { color: '#4af0ff', freq: 220, emoji: '😑' },
-            mad:      { color: '#ff5e7a', freq: 330, emoji: '😠' },
-            thinking: { color: '#b983ff', freq: 400, emoji: '🤔' },
-            surprised:{ color: '#ffe06b', freq: 800, emoji: '😮' },
-            love:     { color: '#ff5e7a', freq: 520, emoji: '❤️' },
-            wink:     { color: '#ffe06b', freq: 590, emoji: '😉' },
-            confused: { color: '#4af0ff', freq: 370, emoji: '😵' },
-            asleep:   { color: '#4af0ff', freq: 200, emoji: '💤' },
-            glitch:   { color: '#ff5e7a', freq: 0, emoji: '⚠️' },
-            charging: { color: '#50e890', freq: 500, emoji: '🔋' },
-            busy:     { color: '#4af0ff', freq: 660, emoji: '⚙️' },
-            purring:  { color: '#ff9f9f', freq: 300, emoji: '😻' },
-            dizzy:    { color: '#ffe06b', freq: 700, emoji: '🥴' }
+            smile:    { color: '#50e890', emoji: '😊', phrase: 'Happy!' },
+            bored:    { color: '#4af0ff', emoji: '😑', phrase: 'So bored...' },
+            mad:      { color: '#ff5e7a', emoji: '😠', phrase: 'Grrr!' },
+            thinking: { color: '#b983ff', emoji: '🤔', phrase: 'Hmm...' },
+            surprised:{ color: '#ffe06b', emoji: '😮', phrase: 'Wow!' },
+            love:     { color: '#ff5e7a', emoji: '❤️', phrase: 'Love you!' },
+            wink:     { color: '#ffe06b', emoji: '😉', phrase: 'Hey there!' },
+            confused: { color: '#4af0ff', emoji: '😵', phrase: 'Huh?!' },
+            asleep:   { color: '#4af0ff', emoji: '💤', phrase: 'Zzz...' },
+            glitch:   { color: '#ff5e7a', emoji: '⚠️', phrase: 'ERROR!' },
+            busy:     { color: '#4af0ff', emoji: '⚙️', phrase: 'Working...' },
+            purring:  { color: '#ff9f9f', emoji: '😻', phrase: 'Purrr...' },
+            dizzy:    { color: '#ffe06b', emoji: '🥴', phrase: 'Whoa!' }
         };
 
         let currentMood = 'smile';
-        let isLocked = false;
-        let soundEnabled = false;
+        let soundEnabled = true;
         let vibrationEnabled = true;
         let audioCtx;
-        let streakCount = 0;
+        let tapCount = 0;
         let lastTapTime = 0;
-        let longPressTimer;
-        let accessories = { hat: false, glasses: false };
-        let isDestroyed = false; // prevent interaction during explosion
+        let autoChangeTimer;
+        let isDestroyed = false;
 
         const face = document.getElementById('face');
         const toast = document.getElementById('toast');
         const streakEl = document.getElementById('streakCounter');
-        const hatEl = document.getElementById('hatAccessory');
-        const glassesEl = document.getElementById('glassesAccessory');
+        const speechBubble = document.getElementById('speechBubble');
         const pupils = document.querySelectorAll('.pupil');
         const robotWrapper = document.getElementById('robotWrapper');
         const robotHead = document.getElementById('ronbot');
+        const flashOverlay = document.getElementById('flashOverlay');
 
-        function applyMood(mood) {
+        // Physics state
+        let vx = 0, vy = 0;
+        let animationFrameId = null;
+        let isPhysicsActive = false;
+        let wrapperRect = robotWrapper.getBoundingClientRect();
+        let posX = wrapperRect.left, posY = wrapperRect.top;
+        const size = wrapperRect.width; // assuming square
+
+        // Initialize position to center
+        function centerRobot() {
+            const w = window.innerWidth, h = window.innerHeight;
+            posX = (w - size) / 2;
+            posY = (h - size) / 2;
+            robotWrapper.style.left = posX + 'px';
+            robotWrapper.style.top = posY + 'px';
+            robotWrapper.style.transform = '';
+        }
+        centerRobot();
+        window.addEventListener('resize', () => {
+            if (!isPhysicsActive && !isDragging) centerRobot();
+        });
+
+        function applyMood(mood, showBubble = false) {
             if (isDestroyed) return;
             const def = moodDefs[mood];
             document.documentElement.style.setProperty('--primary', def.color);
             document.documentElement.style.setProperty('--primary-glow', `rgba(${hexToRgb(def.color)}, 0.6)`);
             face.className = 'face-container ' + mood;
             currentMood = mood;
-            if (def.freq && soundEnabled) playSound(def.freq);
-            if (vibrationEnabled && navigator.vibrate) navigator.vibrate(15);
+            if (vibrationEnabled && navigator.vibrate) navigator.vibrate(10);
+            if (showBubble) {
+                speechBubble.textContent = `${def.emoji} ${def.phrase}`;
+                speechBubble.classList.add('show');
+                setTimeout(() => speechBubble.classList.remove('show'), 2000);
+            }
+            if (mood === 'purring') playPurr();
+            else if (soundEnabled && mood === 'glitch') playGlitch();
+            else if (soundEnabled) playBeep(mood);
         }
 
         function hexToRgb(hex) {
@@ -350,227 +437,287 @@
             return `${r},${g},${b}`;
         }
 
-        function playSound(freq) {
+        function playBeep(mood) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const freqs = { smile:500, bored:250, mad:350, thinking:420, surprised:750, love:520, wink:580, confused:380, asleep:180, busy:600, dizzy:700 };
+            const freq = freqs[mood] || 440;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
             osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
             osc.connect(gain).connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+        }
+
+        function playPurr() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc1.type = 'sine'; osc1.frequency.value = 25;
+            osc2.type = 'sine'; osc2.frequency.value = 35;
+            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2);
+            osc1.connect(gain); osc2.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc1.start(); osc2.start();
+            osc1.stop(audioCtx.currentTime + 2); osc2.stop(audioCtx.currentTime + 2);
+        }
+
+        function playGlitch() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            for (let i=0; i<5; i++) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.value = Math.random() * 800 + 200;
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime + i*0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i*0.05 + 0.05);
+                osc.connect(gain).connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + i*0.05);
+                osc.stop(audioCtx.currentTime + i*0.05 + 0.05);
+            }
         }
 
         function showToast(msg) {
             toast.textContent = msg;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        function spawnExplosion() {
-            const colors = ['#ff007f', '#ffe06b', '#50e890', '#ff5e7a', '#ffffff'];
-            for (let i=0; i<30; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = '50%';
-                p.style.top = '50%';
-                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                p.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
-                p.style.setProperty('--dy', (Math.random() - 0.5) * 200 + 'px');
-                document.body.appendChild(p);
-                setTimeout(() => p.remove(), 800);
+        // ---- ELECTRIC DESTRUCTION ----
+        function triggerElectricDestruction() {
+            isDestroyed = true;
+            flashOverlay.classList.add('active');
+            setTimeout(() => flashOverlay.classList.remove('active'), 200);
+
+            for (let i=0; i<8; i++) {
+                const bolt = document.createElement('div');
+                bolt.className = 'bolt';
+                bolt.style.left = Math.random() * 80 + 10 + '%';
+                bolt.style.top = Math.random() * 80 + 10 + '%';
+                bolt.style.setProperty('--w', (Math.random() * 100 + 50) + 'px');
+                bolt.style.transform = `rotate(${Math.random() * 360}deg)`;
+                document.body.appendChild(bolt);
+                setTimeout(() => bolt.remove(), 500);
             }
-            // Shake
-            robotHead.classList.add('shake');
-            setTimeout(() => robotHead.classList.remove('shake'), 500);
-            if (vibrationEnabled && navigator.vibrate) navigator.vibrate([200,100,200]);
-            // Hide robot briefly
+
+            if (vibrationEnabled && navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+
+            robotWrapper.style.transition = 'transform 0.5s ease-in, opacity 0.5s';
+            robotWrapper.style.transform = 'scale(0.1) rotate(30deg)';
             robotWrapper.style.opacity = '0';
-            robotWrapper.style.transform = 'scale(0.3)';
+            showToast('💥 ELECTRIC OVERLOAD 💥');
+
             setTimeout(() => {
+                robotWrapper.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.1, 1.5), opacity 0.5s';
+                robotWrapper.style.transform = 'scale(1) rotate(0deg)';
                 robotWrapper.style.opacity = '1';
-                robotWrapper.style.transform = 'scale(1)';
-                robotWrapper.style.animation = '';
-                isDestroyed = false;
-                streakCount = 0;
-                streakEl.classList.remove('show');
-                applyMood('smile');
-            }, 2000);
+                setTimeout(() => {
+                    isDestroyed = false;
+                    tapCount = 0;
+                    streakEl.textContent = '⚡ 0';
+                    streakEl.classList.remove('show');
+                    applyMood('smile', true);
+                    resetAutoChange();
+                }, 800);
+            }, 1500);
+        }
+
+        // ---- PHYSICS ENGINE ----
+        function startPhysics() {
+            if (isPhysicsActive) return;
+            isPhysicsActive = true;
+            robotHead.style.animation = 'none';
+            function step() {
+                if (!isPhysicsActive) return;
+                // Apply friction
+                vx *= 0.995;
+                vy *= 0.995;
+
+                posX += vx;
+                posY += vy;
+
+                const maxX = window.innerWidth - size;
+                const maxY = window.innerHeight - size;
+                let bounced = false;
+
+                if (posX < 0) { posX = 0; vx = -vx * 0.7; bounced = true; }
+                if (posX > maxX) { posX = maxX; vx = -vx * 0.7; bounced = true; }
+                if (posY < 0) { posY = 0; vy = -vy * 0.7; bounced = true; }
+                if (posY > maxY) { posY = maxY; vy = -vy * 0.7; bounced = true; }
+
+                robotWrapper.style.left = posX + 'px';
+                robotWrapper.style.top = posY + 'px';
+
+                // 3D tilt based on velocity
+                const tiltX = vy * 0.1;
+                const tiltY = -vx * 0.1;
+                robotHead.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+
+                // Stop physics if nearly still
+                if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+                    vx = 0; vy = 0;
+                    isPhysicsActive = false;
+                    robotHead.style.transform = '';
+                    robotHead.style.animation = 'float 5s ease-in-out infinite';
+                    // optional: snap to center? not needed
+                } else {
+                    animationFrameId = requestAnimationFrame(step);
+                }
+            }
+            animationFrameId = requestAnimationFrame(step);
+        }
+
+        function stopPhysics() {
+            isPhysicsActive = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            robotHead.style.transform = '';
+            robotHead.style.animation = 'float 5s ease-in-out infinite';
         }
 
         // ---- DRAG & THROW ----
         let isDragging = false;
-        let startX, startY, offsetX = 0, offsetY = 0;
+        let dragStartX, dragStartY;
+        let initialPosX, initialPosY;
+        let lastMoveX, lastMoveY;
+        let moveSamples = [];
 
-        robotWrapper.addEventListener('mousedown', (e) => {
-            if (isDestroyed) return;
-            if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
-            isDragging = true;
-            startX = e.clientX - offsetX;
-            startY = e.clientY - offsetY;
-            robotWrapper.classList.add('dragging');
-            robotWrapper.style.animation = 'none';
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging || isDestroyed) return;
-            offsetX = e.clientX - startX;
-            offsetY = e.clientY - startY;
-            robotWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-        });
-        window.addEventListener('mouseup', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            robotWrapper.classList.remove('dragging');
-            offsetX = 0; offsetY = 0;
-            robotWrapper.style.transform = 'translate(0,0)';
-            robotWrapper.style.animation = '';
-        });
-        robotWrapper.addEventListener('touchstart', (e) => {
+        function onDragStart(e) {
             if (isDestroyed) return;
             if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
             e.preventDefault();
-            const touch = e.touches[0];
+            stopPhysics();
             isDragging = true;
-            startX = touch.clientX - offsetX;
-            startY = touch.clientY - offsetY;
-            robotWrapper.classList.add('dragging');
-            robotWrapper.style.animation = 'none';
-        });
-        window.addEventListener('touchmove', (e) => {
-            if (!isDragging || isDestroyed) return;
-            const touch = e.touches[0];
-            offsetX = touch.clientX - startX;
-            offsetY = touch.clientY - startY;
-            robotWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-        });
-        window.addEventListener('touchend', () => {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            dragStartX = clientX;
+            dragStartY = clientY;
+            initialPosX = posX;
+            initialPosY = posY;
+            lastMoveX = clientX;
+            lastMoveY = clientY;
+            moveSamples = [];
+            robotWrapper.style.transition = 'none';
+            robotWrapper.style.cursor = 'grabbing';
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const dx = clientX - dragStartX;
+            const dy = clientY - dragStartY;
+            posX = initialPosX + dx;
+            posY = initialPosY + dy;
+            robotWrapper.style.left = posX + 'px';
+            robotWrapper.style.top = posY + 'px';
+
+            // Record velocity samples
+            moveSamples.push({ x: clientX, y: clientY, time: Date.now() });
+            if (moveSamples.length > 5) moveSamples.shift();
+            lastMoveX = clientX;
+            lastMoveY = clientY;
+        }
+
+        function onDragEnd() {
             if (!isDragging) return;
             isDragging = false;
-            robotWrapper.classList.remove('dragging');
-            offsetX = 0; offsetY = 0;
-            robotWrapper.style.transform = 'translate(0,0)';
-            robotWrapper.style.animation = '';
-        });
+            robotWrapper.style.cursor = 'grab';
 
-        // ---- TAP / STREAK / SELF-DESTRUCT ----
+            // Calculate throw velocity from last two samples
+            if (moveSamples.length >= 2) {
+                const prev = moveSamples[moveSamples.length - 2];
+                const last = moveSamples[moveSamples.length - 1];
+                const dt = (last.time - prev.time) / 1000;
+                if (dt > 0) {
+                    vx = (last.x - prev.x) / dt * 0.8; // scale down
+                    vy = (last.y - prev.y) / dt * 0.8;
+                }
+            }
+
+            // Start physics if velocity is significant
+            if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
+                startPhysics();
+            } else {
+                // No significant throw, keep current position
+            }
+        }
+
+        // Mouse events
+        robotWrapper.addEventListener('mousedown', onDragStart);
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
+
+        // Touch events
+        robotWrapper.addEventListener('touchstart', onDragStart, { passive: false });
+        window.addEventListener('touchmove', onDragMove, { passive: false });
+        window.addEventListener('touchend', onDragEnd);
+
+        // ---- TAP WITH UNLIMITED COUNT ----
         robotWrapper.addEventListener('click', (e) => {
-            if (isDragging || isDestroyed) return;
+            if (isDestroyed || isDragging) return;
             const now = Date.now();
             if (now - lastTapTime < 800) {
-                streakCount++;
-                streakEl.textContent = `🔥 ${streakCount}`;
-                streakEl.classList.add('show');
-                setTimeout(() => streakEl.classList.remove('show'), 2000);
-                if (streakCount === 10) { applyMood('surprised'); showToast('10 in a row!'); }
-                else if (streakCount === 15) {
-                    // SELF DESTRUCT!
-                    showToast('SELF DESTRUCT IN 3...');
-                    setTimeout(() => showToast('2...'), 700);
-                    setTimeout(() => showToast('1...'), 1400);
-                    setTimeout(() => {
-                        showToast('💥 BOOM! 💥');
-                        isDestroyed = true;
-                        spawnExplosion();
-                    }, 2100);
-                }
+                tapCount++;
             } else {
-                streakCount = 0;
+                tapCount = 1;
             }
             lastTapTime = now;
-            const moods = Object.keys(moodDefs);
-            const idx = moods.indexOf(currentMood);
-            applyMood(moods[(idx + 1) % moods.length]);
-        });
 
-        // Long press
-        robotWrapper.addEventListener('mousedown', (e) => {
-            if (isDestroyed) return;
-            longPressTimer = setTimeout(() => {
-                if (!isDragging) applyMood('mad');
-            }, 1200);
-        });
-        robotWrapper.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-        robotWrapper.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
-        robotWrapper.addEventListener('touchstart', (e) => {
-            if (isDestroyed) return;
-            longPressTimer = setTimeout(() => {
-                if (!isDragging) applyMood('mad');
-            }, 1200);
-        });
-        robotWrapper.addEventListener('touchend', () => clearTimeout(longPressTimer));
-        robotWrapper.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+            streakEl.textContent = `⚡ ${tapCount}`;
+            streakEl.classList.add('show');
+            setTimeout(() => streakEl.classList.remove('show'), 1500);
 
-        // Double click lock
-        robotWrapper.addEventListener('dblclick', (e) => {
-            if (isDestroyed) return;
-            isLocked = !isLocked;
-            robotWrapper.classList.toggle('locked', isLocked);
-            showToast(isLocked ? '🔒 Locked' : '🔓 Unlocked');
-        });
-
-        // Pet antenna
-        document.querySelector('.antenna').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isDestroyed) return;
-            applyMood('purring');
-            setTimeout(() => applyMood('smile'), 2000);
-            accessories.hat = !accessories.hat;
-            hatEl.style.display = accessories.hat ? 'block' : 'none';
-        });
-
-        // Tickle left ear
-        document.querySelector('.ear.left').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isDestroyed) return;
-            applyMood('wink');
-            showToast('Hehe!');
-        });
-
-        // Right ear glasses
-        document.querySelector('.ear.right').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isDestroyed) return;
-            accessories.glasses = !accessories.glasses;
-            glassesEl.style.display = accessories.glasses ? 'block' : 'none';
-        });
-
-        // Shake detection
-        let lastShake = 0;
-        window.addEventListener('devicemotion', (e) => {
-            if (isDestroyed) return;
-            const acc = e.accelerationIncludingGravity;
-            if (!acc) return;
-            const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-            if (mag > 25 && Date.now() - lastShake > 2000) {
-                lastShake = Date.now();
-                applyMood('dizzy');
-                showToast('WHOA!');
-                if (vibrationEnabled && navigator.vibrate) navigator.vibrate([100,50,100]);
+            if (tapCount >= 12) {
+                applyMood('glitch', true);
+            } else if (tapCount >= 8) {
+                applyMood('mad', true);
+            } else if (tapCount >= 5) {
+                applyMood('confused', true);
+            } else {
+                const moods = Object.keys(moodDefs);
+                const idx = moods.indexOf(currentMood);
+                const next = moods[(idx + 1) % moods.length];
+                applyMood(next, true);
             }
+
+            if (tapCount === 15) {
+                triggerElectricDestruction();
+                return;
+            }
+            resetAutoChange();
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
+        // ---- AUTO RANDOM MOOD ----
+        function resetAutoChange() {
+            clearTimeout(autoChangeTimer);
             if (isDestroyed) return;
-            const moods = Object.keys(moodDefs);
-            const idx = moods.indexOf(currentMood);
-            if (e.key === 'ArrowRight') applyMood(moods[(idx+1)%moods.length]);
-            else if (e.key === 'ArrowLeft') applyMood(moods[(idx-1+moods.length)%moods.length]);
-            else if (e.key === ' ') { e.preventDefault(); applyMood(moods[Math.floor(Math.random()*moods.length)]); }
-        });
+            const delay = Math.random() * 8000 + 4000;
+            autoChangeTimer = setTimeout(() => {
+                if (tapCount === 0 && !isPhysicsActive) {
+                    const moods = Object.keys(moodDefs);
+                    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+                    if (randomMood !== currentMood) applyMood(randomMood, true);
+                }
+                resetAutoChange();
+            }, delay);
+        }
 
-        // Eye tracking
+        // ---- EYE TRACKING ----
         document.addEventListener('mousemove', (e) => {
             if (isDestroyed) return;
             const rect = robotWrapper.getBoundingClientRect();
-            const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
-            const dx = (e.clientX - centerX) / (rect.width/2) * 4;
-            const dy = (e.clientY - centerY) / (rect.height/2) * 4;
+            const centerX = rect.left + rect.width/2;
+            const centerY = rect.top + rect.height/2;
+            const dx = (e.clientX - centerX) / (rect.width/2) * 3;
+            const dy = (e.clientY - centerY) / (rect.height/2) * 3;
             pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
         });
 
-        // Toggles
+        // ---- TOGGLES ----
         document.getElementById('soundToggle').addEventListener('click', function() {
             soundEnabled = !soundEnabled;
             this.classList.toggle('active', soundEnabled);
@@ -587,7 +734,8 @@
         });
 
         // Init
-        applyMood('smile');
+        applyMood('smile', true);
+        resetAutoChange();
     })();
 </script>
 </body>
