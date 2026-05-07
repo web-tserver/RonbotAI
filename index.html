@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
-    <title>RonBot · Playful Companion</title>
+    <title>RonBot · Playful Debugged</title>
     <style>
         :root {
             --mood-color: #00e0fc;
@@ -105,7 +105,6 @@
         .mouth-container { margin-top:14px; }
         .mouth-path { fill:none; stroke:var(--mood-color); stroke-width:5; stroke-linecap:round; transition:all 0.3s; }
 
-        /* All moods (love fixed, plus new playful ones) */
         .face.smile .eye { border-radius:50% 50% 20% 20%; height:24px; }
         .face.bored .eye { height:7px; opacity:0.6; transform:translateY(5px); }
         .face.mad .eye { transform:rotate(15deg); background:#ff5e7a; }
@@ -123,8 +122,6 @@
         .face.love .eye::before { transform:translate(-50%,0) rotate(-45deg); }
         .face.love .eye::after { transform:translate(-50%,0) rotate(45deg); }
         .face.love .mouth-container { margin-top:24px; }
-
-        /* NEW playful moods */
         .face.cool .eye { background: #333; border: 3px solid var(--mood-color); border-radius: 5px; }
         .face.silly .eye { width: 20px; height: 28px; border-radius: 50% 50% 0 0; }
         .face.party .eye { background: linear-gradient(45deg, #ff007f, #ffe06b, #50e890, #4af0ff); background-size: 200% 200%; animation: party-rotate 1s linear infinite; }
@@ -145,7 +142,6 @@
         }
         .streak-counter { top:20px; } .tap-counter { top:70px; }
         .streak-counter.show, .tap-counter.show { opacity:1; }
-
         .quick-toggles { position:fixed; top:20px; right:16px; display:flex; gap:10px; z-index:100; }
         .toggle-btn {
             width:38px; height:38px; border-radius:50%;
@@ -210,9 +206,10 @@
                 silly:{c:'#ff5e7a',e:'😜',p:'Silly!',m:'M20 16 Q40 30 60 16'},
                 party:{c:'#ff007f',e:'🥳',p:'Party!',m:'M15 14 Q40 30 65 14'}
             };
-            const greetings = ["Hello!", "What's up?", "Howdy!", "Hi there!", "Yo!", "Hey!", "Good to see you!", "Nice day, huh?", "Bleep bloop!"];
+            const greetings = ["Hello!","What's up?","Howdy!","Hi there!","Yo!","Hey!","Good to see you!","Nice day, huh?","Bleep bloop!"];
 
             let cur='smile', sound=true, vibrate=true, taps=0, streak=0, lastTap=0, autoTimer, destroyed=false, frozen=false, audioCtx;
+            let dragging=false, startX, startY, initX, initY;
             const face=document.getElementById('face'), mouth=document.getElementById('mouthPath'),
                   streakEl=document.getElementById('streakCounter'), tapEl=document.getElementById('tapCounter'),
                   bubble=document.getElementById('speechBubble'), wrapper=document.getElementById('robotWrapper'),
@@ -252,9 +249,8 @@
                 for(let i=0;i<5;i++){ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='square'; o.frequency.value=Math.random()*600+200; g.gain.setValueAtTime(0.03,audioCtx.currentTime+i*0.04); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+i*0.04+0.04); o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime+i*0.04); o.stop(audioCtx.currentTime+i*0.04+0.04); }
             }
 
-            // Playful random idle behavior
             function randomPlayful() {
-                if (destroyed || frozen || isDragging) return;
+                if (destroyed || frozen || dragging) return;
                 const actions = ['greet', 'wave', 'spin', 'change'];
                 const action = actions[Math.floor(Math.random() * actions.length)];
                 if (action === 'greet') {
@@ -275,14 +271,12 @@
                 }
             }
 
-            // auto idle with playful interruptions
             function resetAutoChange() {
                 clearTimeout(autoTimer);
                 if (destroyed) return;
-                // occasionally inject playful action
                 if (Math.random() < 0.4) randomPlayful();
                 autoTimer = setTimeout(() => {
-                    if (streak === 0 && !isPhysicsActive && !isDragging) {
+                    if (streak === 0 && !dragging) {
                         const keys = Object.keys(moods);
                         const m = keys[Math.floor(Math.random() * keys.length)];
                         if (m !== cur) setMood(m, true);
@@ -291,7 +285,6 @@
                 }, 6000 + Math.random() * 9000);
             }
 
-            // Click interactions (unchanged)
             wrapper.addEventListener('click',(e)=>{
                 if(destroyed||frozen) return;
                 taps++; tapEl.textContent=`Taps: ${taps}`; tapEl.classList.add('show'); setTimeout(()=>tapEl.classList.remove('show'),2000);
@@ -332,7 +325,7 @@
                 },1600);
             }
 
-            let dragging=false, startX, startY, initX, initY;
+            // Drag handlers (properly scoped)
             wrapper.addEventListener('mousedown',(e)=>{ if(destroyed)return; e.preventDefault(); dragging=true; startX=e.clientX; startY=e.clientY; initX=wrapper.offsetLeft; initY=wrapper.offsetTop; });
             window.addEventListener('mousemove',(e)=>{ if(!dragging)return; wrapper.style.left=(initX+e.clientX-startX)+'px'; wrapper.style.top=(initY+e.clientY-startY)+'px'; });
             window.addEventListener('mouseup',()=>{ dragging=false; });
