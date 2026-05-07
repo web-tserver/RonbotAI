@@ -40,7 +40,7 @@
             background-size: 40px 40px;
         }
 
-        /* ---- Robot wrapper (for drag) ---- */
+        /* ---- Robot wrapper ---- */
         .robot-wrapper {
             position: relative;
             width: min(220px, 50vmin);
@@ -52,7 +52,6 @@
         .robot-wrapper:active { cursor: grabbing; }
         .robot-wrapper.dragging { transition: none; }
 
-        /* ---- Head ---- */
         .robot-head {
             width: 100%; height: 100%;
             background: var(--head-bg-light);
@@ -73,43 +72,27 @@
             50%{ transform: translateY(-12px); }
         }
 
-        /* Ears */
         .ear {
-            position: absolute;
-            top: 50%; transform: translateY(-50%);
-            width: 14px; height: 45%;
-            background: #3a4a5a;
-            border-radius: 7px;
-            z-index: -1;
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 14px; height: 45%; background: #3a4a5a; border-radius: 7px; z-index: -1;
         }
-        .ear.left { left: -8px; }
-        .ear.right { right: -8px; }
+        .ear.left { left: -8px; } .ear.right { right: -8px; }
 
-        /* LED strips */
         .led-strip {
             position: absolute; top: 50%; transform: translateY(-50%);
             width: 5px; height: 50%; border-radius: 3px;
-            background: var(--primary);
-            box-shadow: 0 0 12px var(--primary-glow);
-            z-index: 20; opacity: 0.8;
-            transition: background 0.3s, box-shadow 0.3s;
+            background: var(--primary); box-shadow: 0 0 12px var(--primary-glow);
+            z-index: 20; opacity: 0.8; transition: background 0.3s, box-shadow 0.3s;
         }
-        .led-strip.left { left: 14px; }
-        .led-strip.right { right: 14px; }
+        .led-strip.left { left: 14px; } .led-strip.right { right: 14px; }
 
-        /* Antenna */
         .antenna {
             position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
-            width: 6px; height: 36px;
-            background: #4a5a6a;
-            border-radius: 4px 4px 0 0;
-            z-index: 6;
+            width: 6px; height: 36px; background: #4a5a6a; border-radius: 4px 4px 0 0; z-index: 6;
         }
         .antenna::after {
             content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-            width: 16px; height: 16px;
-            background: var(--primary);
-            border-radius: 50%;
+            width: 16px; height: 16px; background: var(--primary); border-radius: 50%;
             box-shadow: 0 0 18px var(--primary), 0 0 35px var(--primary-glow);
             animation: antenna-pulse 2s infinite;
         }
@@ -118,7 +101,6 @@
             50%{ opacity: 1; transform: translateX(-50%) scale(1.25); }
         }
 
-        /* Screen */
         .screen {
             width: 75%; height: 75%;
             background: var(--screen-bg);
@@ -133,15 +115,15 @@
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        /* Face */
         .face-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 14px;
             z-index: 2;
+            position: relative;
         }
-        .eyes { display: flex; gap: 30px; }
+        .eyes { display: flex; gap: 30px; position: relative; }
         .eye {
             width: 18px; height: 18px;
             background: var(--primary);
@@ -170,7 +152,7 @@
             filter: drop-shadow(0 4px 10px var(--primary-glow));
         }
 
-        /* Mood styles (fully present) */
+        /* Mood styles (full set) */
         .face-container.smile .eye { border-radius:10px 10px 2px 2px; height:10px; width:18px; background:#50e890; }
         .face-container.smile .mouth { border-bottom-color:#50e890; }
         .face-container.bored .eye { height:5px; border-radius:2px; transform:translateY(6px); opacity:0.6; background:var(--primary); }
@@ -184,9 +166,7 @@
         .face-container.surprised .eye { width:18px; height:18px; border-radius:50%; background:#ffe06b; }
         .face-container.surprised .mouth { width:24px; height:24px; border:3px solid #ffe06b; border-radius:50%; border-bottom:none; }
         .face-container.love .eye { background:transparent; box-shadow:none; width:20px; height:18px; position:relative; }
-        .face-container.love .eye::before, .face-container.love .eye::after {
-            content:''; position:absolute; width:10px; height:16px; background:#ff5e7a; border-radius:50px 50px 0 0; box-shadow:0 0 12px rgba(255,94,122,0.6);
-        }
+        .face-container.love .eye::before, .face-container.love .eye::after { content:''; position:absolute; width:10px; height:16px; background:#ff5e7a; border-radius:50px 50px 0 0; box-shadow:0 0 12px rgba(255,94,122,0.6); }
         .face-container.love .eye::before { left:0; transform:rotate(-45deg); transform-origin:bottom left; }
         .face-container.love .eye::after { right:0; transform:rotate(45deg); transform-origin:bottom right; }
         .face-container.love .mouth { width:22px; height:12px; border-bottom:3px solid #ff5e7a; border-radius:0 0 20px 20px; }
@@ -217,13 +197,18 @@
         .face-container.dizzy .eye { width:10px; height:14px; border-radius:50%; animation:spin-eye 0.3s infinite; background:#ffe06b; }
         @keyframes spin-eye { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
 
-        /* Accessories */
+        /* Accessories - fixed glasses position */
         .accessory {
             position: absolute; pointer-events: none; z-index: 30;
-            font-size: 2rem; text-shadow: 0 0 10px var(--primary-glow);
+            font-size: 2.2rem; text-shadow: 0 0 10px var(--primary-glow);
         }
         .accessory.hat { top: -40px; left: 50%; transform: translateX(-50%); }
-        .accessory.glasses { top: 0px; left: 50%; transform: translateX(-50%); }
+        /* Glasses now inside face-container, positioned over eyes */
+        .accessory.glasses {
+            top: -5px; left: 50%; transform: translateX(-50%);
+            font-size: 2.8rem; letter-spacing: 8px; /* emoji glasses */
+            background: none; color: #333; text-shadow: 0 0 5px rgba(255,255,255,0.8);
+        }
 
         /* Toast */
         .toast {
@@ -234,7 +219,6 @@
         }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-        /* Streak counter */
         .streak-counter {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: var(--primary); color: white; padding: 6px 16px; border-radius: 20px;
@@ -242,7 +226,6 @@
         }
         .streak-counter.show { opacity: 1; }
 
-        /* Toggle buttons */
         .quick-toggles {
             position: fixed; top: 20px; right: 20px; display: flex; gap: 12px; z-index: 100;
         }
@@ -255,6 +238,26 @@
         }
         .toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
         .toggle-btn:hover { transform: translateY(-2px); }
+
+        /* Explosion particles */
+        .particle {
+            position: absolute; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--primary); pointer-events: none; z-index: 999;
+            animation: particle-fly 0.8s ease-out forwards;
+        }
+        @keyframes particle-fly {
+            0% { opacity: 1; transform: translate(0,0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%,100%{ transform: translate(0,0); }
+            10%,30%,50%,70%,90%{ transform: translate(-10px, 2px); }
+            20%,40%,60%,80%{ transform: translate(10px, -2px); }
+        }
     </style>
 </head>
 <body class="dark">
@@ -269,7 +272,6 @@
     <button class="toggle-btn active" id="darkToggle" title="Dark/Light">🌓</button>
 </div>
 
-<!-- Draggable robot wrapper -->
 <div class="robot-wrapper" id="robotWrapper">
     <div class="robot-head" id="ronbot">
         <div class="antenna"></div>
@@ -280,14 +282,15 @@
 
         <div class="screen">
             <div class="face-container" id="face">
-                <div class="eyes">
+                <div class="eyes" id="eyesArea">
                     <div class="eye"><div class="pupil"></div></div>
                     <div class="eye"><div class="pupil"></div></div>
+                    <!-- Glasses now inside eyes area for correct placement -->
+                    <span class="accessory glasses" id="glassesAccessory" style="display:none;">👓</span>
                 </div>
                 <div class="mouth"></div>
             </div>
             <span class="accessory hat" id="hatAccessory" style="display:none;">🎩</span>
-            <span class="accessory glasses" id="glassesAccessory" style="display:none;">👓</span>
         </div>
     </div>
 </div>
@@ -320,8 +323,8 @@
         let lastTapTime = 0;
         let longPressTimer;
         let accessories = { hat: false, glasses: false };
+        let isDestroyed = false; // prevent interaction during explosion
 
-        // DOM refs
         const face = document.getElementById('face');
         const toast = document.getElementById('toast');
         const streakEl = document.getElementById('streakCounter');
@@ -329,8 +332,10 @@
         const glassesEl = document.getElementById('glassesAccessory');
         const pupils = document.querySelectorAll('.pupil');
         const robotWrapper = document.getElementById('robotWrapper');
+        const robotHead = document.getElementById('ronbot');
 
         function applyMood(mood) {
+            if (isDestroyed) return;
             const def = moodDefs[mood];
             document.documentElement.style.setProperty('--primary', def.color);
             document.documentElement.style.setProperty('--primary-glow', `rgba(${hexToRgb(def.color)}, 0.6)`);
@@ -338,7 +343,6 @@
             currentMood = mood;
             if (def.freq && soundEnabled) playSound(def.freq);
             if (vibrationEnabled && navigator.vibrate) navigator.vibrate(15);
-            showToast(mood);
         }
 
         function hexToRgb(hex) {
@@ -361,7 +365,38 @@
         function showToast(msg) {
             toast.textContent = msg;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 1500);
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function spawnExplosion() {
+            const colors = ['#ff007f', '#ffe06b', '#50e890', '#ff5e7a', '#ffffff'];
+            for (let i=0; i<30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = '50%';
+                p.style.top = '50%';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
+                p.style.setProperty('--dy', (Math.random() - 0.5) * 200 + 'px');
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+            // Shake
+            robotHead.classList.add('shake');
+            setTimeout(() => robotHead.classList.remove('shake'), 500);
+            if (vibrationEnabled && navigator.vibrate) navigator.vibrate([200,100,200]);
+            // Hide robot briefly
+            robotWrapper.style.opacity = '0';
+            robotWrapper.style.transform = 'scale(0.3)';
+            setTimeout(() => {
+                robotWrapper.style.opacity = '1';
+                robotWrapper.style.transform = 'scale(1)';
+                robotWrapper.style.animation = '';
+                isDestroyed = false;
+                streakCount = 0;
+                streakEl.classList.remove('show');
+                applyMood('smile');
+            }, 2000);
         }
 
         // ---- DRAG & THROW ----
@@ -369,21 +404,20 @@
         let startX, startY, offsetX = 0, offsetY = 0;
 
         robotWrapper.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return; // exclude ears/antenna
+            if (isDestroyed) return;
+            if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
             isDragging = true;
             startX = e.clientX - offsetX;
             startY = e.clientY - offsetY;
             robotWrapper.classList.add('dragging');
             robotWrapper.style.animation = 'none';
         });
-
         window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
+            if (!isDragging || isDestroyed) return;
             offsetX = e.clientX - startX;
             offsetY = e.clientY - startY;
             robotWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         });
-
         window.addEventListener('mouseup', () => {
             if (!isDragging) return;
             isDragging = false;
@@ -392,9 +426,8 @@
             robotWrapper.style.transform = 'translate(0,0)';
             robotWrapper.style.animation = '';
         });
-
-        // Touch drag
         robotWrapper.addEventListener('touchstart', (e) => {
+            if (isDestroyed) return;
             if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
             e.preventDefault();
             const touch = e.touches[0];
@@ -405,7 +438,7 @@
             robotWrapper.style.animation = 'none';
         });
         window.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
+            if (!isDragging || isDestroyed) return;
             const touch = e.touches[0];
             offsetX = touch.clientX - startX;
             offsetY = touch.clientY - startY;
@@ -420,9 +453,9 @@
             robotWrapper.style.animation = '';
         });
 
-        // ---- CLICK TO CYCLE MOOD ----
+        // ---- TAP / STREAK / SELF-DESTRUCT ----
         robotWrapper.addEventListener('click', (e) => {
-            if (isDragging) return;
+            if (isDragging || isDestroyed) return;
             const now = Date.now();
             if (now - lastTapTime < 800) {
                 streakCount++;
@@ -430,7 +463,17 @@
                 streakEl.classList.add('show');
                 setTimeout(() => streakEl.classList.remove('show'), 2000);
                 if (streakCount === 10) { applyMood('surprised'); showToast('10 in a row!'); }
-                else if (streakCount === 50) { applyMood('love'); showToast('50! Craaazy!'); }
+                else if (streakCount === 15) {
+                    // SELF DESTRUCT!
+                    showToast('SELF DESTRUCT IN 3...');
+                    setTimeout(() => showToast('2...'), 700);
+                    setTimeout(() => showToast('1...'), 1400);
+                    setTimeout(() => {
+                        showToast('💥 BOOM! 💥');
+                        isDestroyed = true;
+                        spawnExplosion();
+                    }, 2100);
+                }
             } else {
                 streakCount = 0;
             }
@@ -440,8 +483,9 @@
             applyMood(moods[(idx + 1) % moods.length]);
         });
 
-        // ---- LONG PRESS -> MAD ----
+        // Long press
         robotWrapper.addEventListener('mousedown', (e) => {
+            if (isDestroyed) return;
             longPressTimer = setTimeout(() => {
                 if (!isDragging) applyMood('mad');
             }, 1200);
@@ -449,6 +493,7 @@
         robotWrapper.addEventListener('mouseup', () => clearTimeout(longPressTimer));
         robotWrapper.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
         robotWrapper.addEventListener('touchstart', (e) => {
+            if (isDestroyed) return;
             longPressTimer = setTimeout(() => {
                 if (!isDragging) applyMood('mad');
             }, 1200);
@@ -456,39 +501,44 @@
         robotWrapper.addEventListener('touchend', () => clearTimeout(longPressTimer));
         robotWrapper.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 
-        // ---- DOUBLE CLICK LOCK ----
+        // Double click lock
         robotWrapper.addEventListener('dblclick', (e) => {
+            if (isDestroyed) return;
             isLocked = !isLocked;
             robotWrapper.classList.toggle('locked', isLocked);
             showToast(isLocked ? '🔒 Locked' : '🔓 Unlocked');
         });
 
-        // ---- PET ANTENNA ----
+        // Pet antenna
         document.querySelector('.antenna').addEventListener('click', (e) => {
             e.stopPropagation();
+            if (isDestroyed) return;
             applyMood('purring');
             setTimeout(() => applyMood('smile'), 2000);
             accessories.hat = !accessories.hat;
             hatEl.style.display = accessories.hat ? 'block' : 'none';
         });
 
-        // ---- TICKLE LEFT EAR ----
+        // Tickle left ear
         document.querySelector('.ear.left').addEventListener('click', (e) => {
             e.stopPropagation();
+            if (isDestroyed) return;
             applyMood('wink');
             showToast('Hehe!');
         });
 
-        // ---- RIGHT EAR GLASSES ----
+        // Right ear glasses
         document.querySelector('.ear.right').addEventListener('click', (e) => {
             e.stopPropagation();
+            if (isDestroyed) return;
             accessories.glasses = !accessories.glasses;
             glassesEl.style.display = accessories.glasses ? 'block' : 'none';
         });
 
-        // ---- SHAKE DETECTION ----
+        // Shake detection
         let lastShake = 0;
         window.addEventListener('devicemotion', (e) => {
+            if (isDestroyed) return;
             const acc = e.accelerationIncludingGravity;
             if (!acc) return;
             const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
@@ -500,42 +550,19 @@
             }
         });
 
-        // ---- KEYBOARD SHORTCUTS ----
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            if (isDestroyed) return;
             const moods = Object.keys(moodDefs);
             const idx = moods.indexOf(currentMood);
             if (e.key === 'ArrowRight') applyMood(moods[(idx+1)%moods.length]);
             else if (e.key === 'ArrowLeft') applyMood(moods[(idx-1+moods.length)%moods.length]);
             else if (e.key === ' ') { e.preventDefault(); applyMood(moods[Math.floor(Math.random()*moods.length)]); }
-            // Konami
-            window.konami = window.konami || [];
-            window.konami.push(e.key);
-            if (window.konami.length > 8) window.konami.shift();
-            if (JSON.stringify(window.konami) === JSON.stringify(['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'])) {
-                applyMood('glitch');
-                document.body.style.background = 'linear-gradient(45deg, #ff007f, #ffe06b, #50e890)';
-                setTimeout(() => document.body.style.background = '', 3000);
-            }
-            // Self destruct
-            if (e.key === 'Backspace' && e.ctrlKey) {
-                let count = 5;
-                showToast(`Self destruct in ${count}...`);
-                const timer = setInterval(() => {
-                    count--;
-                    if (count === 0) {
-                        clearInterval(timer);
-                        applyMood('asleep');
-                        robotWrapper.style.transform = 'scale(0)';
-                        setTimeout(() => { robotWrapper.style.transform = 'scale(1)'; robotWrapper.style.animation = ''; }, 2000);
-                    } else {
-                        showToast(`Self destruct in ${count}...`);
-                    }
-                }, 1000);
-            }
         });
 
-        // ---- EYE TRACKING (simplified, no parallax to avoid conflicts) ----
+        // Eye tracking
         document.addEventListener('mousemove', (e) => {
+            if (isDestroyed) return;
             const rect = robotWrapper.getBoundingClientRect();
             const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
             const dx = (e.clientX - centerX) / (rect.width/2) * 4;
@@ -543,7 +570,7 @@
             pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
         });
 
-        // ---- TOGGLES ----
+        // Toggles
         document.getElementById('soundToggle').addEventListener('click', function() {
             soundEnabled = !soundEnabled;
             this.classList.toggle('active', soundEnabled);
