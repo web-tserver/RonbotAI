@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
-    <title>RonBot · 3D Pinball Throw</title>
+    <title>RonBot · Comic Bounce Back</title>
     <style>
         :root {
             --primary: #ff007f;
@@ -76,10 +76,11 @@
             z-index: 10;
             perspective: 600px;
             transform-style: preserve-3d;
-            transition: none;
             will-change: left, top, transform;
+            transition: left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4), top 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4);
         }
         .robot-wrapper:active { cursor: grabbing; }
+        .robot-wrapper.returning { transition: left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4), top 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4); }
 
         .robot-head {
             width: 100%; height: 100%;
@@ -210,47 +211,60 @@
         .face-container.dizzy .eye { width:9px; height:12px; border-radius:50%; animation:spin-eye 0.3s infinite; background:#ffe06b; }
         @keyframes spin-eye { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
 
-        /* Speech bubble on the right */
+        /* Comic speech bubble */
         .speech-bubble {
             position: absolute;
-            top: -10px;
-            right: -70px;
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 8px 14px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            top: -40px;
+            right: -80px;
+            background: #fff;
+            color: #222;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
             white-space: nowrap;
             opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
+            transition: opacity 0.2s, transform 0.2s;
             pointer-events: none;
             z-index: 50;
-            border: 1px solid var(--primary);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            transform: scale(0.9);
+            border: 2px solid #222;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            transform: scale(0.8);
+            font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
         }
         .speech-bubble.show {
             opacity: 1;
             transform: scale(1);
-            animation: bubble-pop 0.4s ease-out;
+            animation: bubble-pop 0.3s ease-out;
         }
         @keyframes bubble-pop {
-            0% { transform: scale(0.8); }
-            60% { transform: scale(1.05); }
+            0% { transform: scale(0.7); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -12px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 12px solid #fff;
         }
         .speech-bubble::before {
             content: '';
             position: absolute;
             top: 50%;
-            left: -6px;
+            left: -16px;
             transform: translateY(-50%);
             width: 0;
             height: 0;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-            border-right: 6px solid rgba(0,0,0,0.85);
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-right: 14px solid #222;
         }
 
         .streak-counter {
@@ -318,7 +332,7 @@
 
         @media (max-width: 400px) {
             .robot-wrapper { width: 170px; height: 170px; }
-            .speech-bubble { font-size: 0.7rem; padding: 6px 10px; right: -60px; }
+            .speech-bubble { font-size: 0.75rem; padding: 8px 12px; right: -70px; top: -35px; }
             .toggle-btn { width: 36px; height: 36px; font-size: 0.9rem; }
         }
     </style>
@@ -396,23 +410,35 @@
         let vx = 0, vy = 0;
         let animationFrameId = null;
         let isPhysicsActive = false;
-        let wrapperRect = robotWrapper.getBoundingClientRect();
-        let posX = wrapperRect.left, posY = wrapperRect.top;
-        const size = wrapperRect.width; // assuming square
+        let isReturning = false;
+        let posX, posY;
+        let centerX, centerY;
+        const size = robotWrapper.offsetWidth;
 
-        // Initialize position to center
-        function centerRobot() {
-            const w = window.innerWidth, h = window.innerHeight;
-            posX = (w - size) / 2;
-            posY = (h - size) / 2;
+        function updateCenter() {
+            centerX = (window.innerWidth - size) / 2;
+            centerY = (window.innerHeight - size) / 2;
+        }
+        updateCenter();
+        window.addEventListener('resize', () => {
+            updateCenter();
+            if (!isDragging && !isPhysicsActive && !isReturning) {
+                robotWrapper.style.transition = 'none';
+                posX = centerX;
+                posY = centerY;
+                robotWrapper.style.left = posX + 'px';
+                robotWrapper.style.top = posY + 'px';
+            }
+        });
+
+        function setToCenter() {
+            posX = centerX;
+            posY = centerY;
             robotWrapper.style.left = posX + 'px';
             robotWrapper.style.top = posY + 'px';
-            robotWrapper.style.transform = '';
         }
-        centerRobot();
-        window.addEventListener('resize', () => {
-            if (!isPhysicsActive && !isDragging) centerRobot();
-        });
+        // Initialize to center
+        setToCenter();
 
         function applyMood(mood, showBubble = false) {
             if (isDestroyed) return;
@@ -515,6 +541,7 @@
                 robotWrapper.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.1, 1.5), opacity 0.5s';
                 robotWrapper.style.transform = 'scale(1) rotate(0deg)';
                 robotWrapper.style.opacity = '1';
+                setToCenter();
                 setTimeout(() => {
                     isDestroyed = false;
                     tapCount = 0;
@@ -526,44 +553,36 @@
             }, 1500);
         }
 
-        // ---- PHYSICS ENGINE ----
+        // ---- PHYSICS & RETURN TO CENTER ----
         function startPhysics() {
-            if (isPhysicsActive) return;
+            if (isPhysicsActive || isReturning) return;
             isPhysicsActive = true;
             robotHead.style.animation = 'none';
+            robotWrapper.classList.remove('returning');
             function step() {
                 if (!isPhysicsActive) return;
-                // Apply friction
                 vx *= 0.995;
                 vy *= 0.995;
-
                 posX += vx;
                 posY += vy;
-
                 const maxX = window.innerWidth - size;
                 const maxY = window.innerHeight - size;
                 let bounced = false;
-
                 if (posX < 0) { posX = 0; vx = -vx * 0.7; bounced = true; }
                 if (posX > maxX) { posX = maxX; vx = -vx * 0.7; bounced = true; }
                 if (posY < 0) { posY = 0; vy = -vy * 0.7; bounced = true; }
                 if (posY > maxY) { posY = maxY; vy = -vy * 0.7; bounced = true; }
-
                 robotWrapper.style.left = posX + 'px';
                 robotWrapper.style.top = posY + 'px';
-
-                // 3D tilt based on velocity
                 const tiltX = vy * 0.1;
                 const tiltY = -vx * 0.1;
                 robotHead.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
-
-                // Stop physics if nearly still
-                if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+                if (Math.abs(vx) < 0.15 && Math.abs(vy) < 0.15) {
                     vx = 0; vy = 0;
                     isPhysicsActive = false;
                     robotHead.style.transform = '';
                     robotHead.style.animation = 'float 5s ease-in-out infinite';
-                    // optional: snap to center? not needed
+                    returnToCenter();
                 } else {
                     animationFrameId = requestAnimationFrame(step);
                 }
@@ -578,17 +597,57 @@
             robotHead.style.animation = 'float 5s ease-in-out infinite';
         }
 
+        function returnToCenter() {
+            if (isReturning || isDragging || isPhysicsActive) return;
+            const dx = centerX - posX;
+            const dy = centerY - posY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 5) {
+                // Already near center
+                setToCenter();
+                return;
+            }
+            isReturning = true;
+            robotWrapper.classList.add('returning');
+            robotWrapper.style.transition = 'left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4), top 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.4)';
+            posX = centerX;
+            posY = centerY;
+            robotWrapper.style.left = posX + 'px';
+            robotWrapper.style.top = posY + 'px';
+            const onTransitionEnd = () => {
+                isReturning = false;
+                robotWrapper.classList.remove('returning');
+                robotWrapper.style.transition = '';
+                robotWrapper.removeEventListener('transitionend', onTransitionEnd);
+            };
+            robotWrapper.addEventListener('transitionend', onTransitionEnd);
+        }
+
+        // Interrupt return on drag
+        function cancelReturn() {
+            if (isReturning) {
+                isReturning = false;
+                robotWrapper.classList.remove('returning');
+                robotWrapper.style.transition = 'none';
+                const rect = robotWrapper.getBoundingClientRect();
+                posX = rect.left;
+                posY = rect.top;
+                robotWrapper.style.left = posX + 'px';
+                robotWrapper.style.top = posY + 'px';
+            }
+        }
+
         // ---- DRAG & THROW ----
         let isDragging = false;
         let dragStartX, dragStartY;
         let initialPosX, initialPosY;
-        let lastMoveX, lastMoveY;
         let moveSamples = [];
 
         function onDragStart(e) {
             if (isDestroyed) return;
             if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
             e.preventDefault();
+            cancelReturn();
             stopPhysics();
             isDragging = true;
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -597,8 +656,6 @@
             dragStartY = clientY;
             initialPosX = posX;
             initialPosY = posY;
-            lastMoveX = clientX;
-            lastMoveY = clientY;
             moveSamples = [];
             robotWrapper.style.transition = 'none';
             robotWrapper.style.cursor = 'grabbing';
@@ -614,35 +671,28 @@
             posY = initialPosY + dy;
             robotWrapper.style.left = posX + 'px';
             robotWrapper.style.top = posY + 'px';
-
-            // Record velocity samples
             moveSamples.push({ x: clientX, y: clientY, time: Date.now() });
             if (moveSamples.length > 5) moveSamples.shift();
-            lastMoveX = clientX;
-            lastMoveY = clientY;
         }
 
         function onDragEnd() {
             if (!isDragging) return;
             isDragging = false;
             robotWrapper.style.cursor = 'grab';
-
-            // Calculate throw velocity from last two samples
             if (moveSamples.length >= 2) {
                 const prev = moveSamples[moveSamples.length - 2];
                 const last = moveSamples[moveSamples.length - 1];
                 const dt = (last.time - prev.time) / 1000;
                 if (dt > 0) {
-                    vx = (last.x - prev.x) / dt * 0.8; // scale down
+                    vx = (last.x - prev.x) / dt * 0.8;
                     vy = (last.y - prev.y) / dt * 0.8;
                 }
             }
-
-            // Start physics if velocity is significant
             if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
                 startPhysics();
             } else {
-                // No significant throw, keep current position
+                // If not thrown, just return to center
+                returnToCenter();
             }
         }
 
@@ -666,7 +716,6 @@
                 tapCount = 1;
             }
             lastTapTime = now;
-
             streakEl.textContent = `⚡ ${tapCount}`;
             streakEl.classList.add('show');
             setTimeout(() => streakEl.classList.remove('show'), 1500);
@@ -683,7 +732,6 @@
                 const next = moods[(idx + 1) % moods.length];
                 applyMood(next, true);
             }
-
             if (tapCount === 15) {
                 triggerElectricDestruction();
                 return;
@@ -697,7 +745,7 @@
             if (isDestroyed) return;
             const delay = Math.random() * 8000 + 4000;
             autoChangeTimer = setTimeout(() => {
-                if (tapCount === 0 && !isPhysicsActive) {
+                if (tapCount === 0 && !isPhysicsActive && !isDragging) {
                     const moods = Object.keys(moodDefs);
                     const randomMood = moods[Math.floor(Math.random() * moods.length)];
                     if (randomMood !== currentMood) applyMood(randomMood, true);
@@ -710,10 +758,10 @@
         document.addEventListener('mousemove', (e) => {
             if (isDestroyed) return;
             const rect = robotWrapper.getBoundingClientRect();
-            const centerX = rect.left + rect.width/2;
-            const centerY = rect.top + rect.height/2;
-            const dx = (e.clientX - centerX) / (rect.width/2) * 3;
-            const dy = (e.clientY - centerY) / (rect.height/2) * 3;
+            const centerXEye = rect.left + rect.width/2;
+            const centerYEye = rect.top + rect.height/2;
+            const dx = (e.clientX - centerXEye) / (rect.width/2) * 3;
+            const dy = (e.clientY - centerYEye) / (rect.height/2) * 3;
             pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
         });
 
