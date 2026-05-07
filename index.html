@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
-    <title>RonBot · Ultimate LCD Companion</title>
+    <title>RonBot · Ultimate Companion (Debugged)</title>
     <style>
         :root {
             --mood-color: #00e0fc;
@@ -16,7 +16,6 @@
             --text-color: #333;
             --casing-top: #f5f5f5;
             --casing-bottom: #b0b0b0;
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         body.dark {
             --bg-light: var(--bg-dark);
@@ -73,6 +72,29 @@
         .robot-wrapper:active { cursor: grabbing; }
         .robot-wrapper.returning { transition: left 0.35s cubic-bezier(0.25,0.1,0.25,1.2), top 0.35s cubic-bezier(0.25,0.1,0.25,1.2); }
 
+        /* Antenna (needed for easter eggs) */
+        .antenna {
+            position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 36px; background: #4a5a6a; border-radius: 4px 4px 0 0; z-index: 6;
+            cursor: pointer;
+        }
+        .antenna::after {
+            content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            width: 16px; height: 16px; background: var(--mood-color); border-radius: 50%;
+            box-shadow: 0 0 18px var(--mood-color), 0 0 35px var(--mood-glow);
+            animation: antenna-pulse 2s infinite;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        @keyframes antenna-pulse { 0%,100%{opacity:0.7; transform:translateX(-50%) scale(1);} 50%{opacity:1; transform:translateX(-50%) scale(1.25);} }
+
+        /* Ears (needed for easter eggs) */
+        .ear {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 14px; height: 45%; background: #3a4a5a; border-radius: 7px; z-index: -1;
+            cursor: pointer;
+        }
+        .ear.left { left: -8px; } .ear.right { right: -8px; }
+
         .head-casing {
             width:100%; height:100%;
             background: linear-gradient(180deg, var(--casing-top) 0%, var(--casing-bottom) 100%);
@@ -81,6 +103,16 @@
             box-shadow: 0 12px 30px rgba(0,0,0,0.25), 0 0 20px var(--mood-glow);
             padding:8px; box-sizing:border-box;
             transition: background 0.4s, border-color 0.4s, box-shadow 0.3s;
+        }
+        .head-casing.disco {
+            animation: disco-flash 0.3s infinite alternate;
+        }
+        @keyframes disco-flash {
+            0% { background: linear-gradient(180deg, #ff007f, #ffe06b); border-color: #ff007f; }
+            25% { background: linear-gradient(180deg, #50e890, #ffe06b); border-color: #50e890; }
+            50% { background: linear-gradient(180deg, #4af0ff, #ff5e7a); border-color: #4af0ff; }
+            75% { background: linear-gradient(180deg, #b983ff, #50e890); border-color: #b983ff; }
+            100% { background: linear-gradient(180deg, #ffe06b, #ff5e7a); border-color: #ffe06b; }
         }
         body.dark .head-casing { border-color:#555; box-shadow:0 12px 30px rgba(0,0,0,0.6), 0 0 25px var(--mood-glow); }
         .head-casing.shake { animation: shake 0.4s ease-in-out; }
@@ -120,7 +152,7 @@
             filter:drop-shadow(0 0 6px var(--mood-color));
         }
 
-        /* Full mood set */
+        /* Mood eye variations */
         .face.smile .eye { border-radius:50% 50% 20% 20%; height:24px; }
         .face.bored .eye { height:7px; border-radius:4px; transform:translateY(5px); opacity:0.7; }
         .face.mad .eye { transform:rotate(15deg); background:#ff5e7a; }
@@ -180,14 +212,15 @@
             width:0; height:0; border-left:13px solid transparent; border-right:13px solid transparent; border-top:14px solid #333;
         }
 
-        .streak-counter, .tap-counter {
+        .streak-counter, .tap-counter, .mini-score {
             position:fixed; left:50%; transform:translateX(-50%);
             background:#00e0fc; color:#030a0c; padding:6px 18px; border-radius:20px;
             font-weight:bold; font-size:0.85rem; z-index:200; opacity:0; transition:0.3s;
         }
         .streak-counter { top:max(20px, env(safe-area-inset-top)); }
         .tap-counter { top:70px; }
-        .streak-counter.show, .tap-counter.show { opacity:1; }
+        .mini-score { top:120px; background:#ffe06b; }
+        .streak-counter.show, .tap-counter.show, .mini-score.show { opacity:1; }
 
         .mood-history-bar {
             position:fixed; top:0; left:0; height:6px; display:flex; z-index:200;
@@ -197,7 +230,7 @@
 
         .quick-toggles {
             position:fixed; top:max(20px, env(safe-area-inset-top)); right:16px;
-            display:flex; gap:10px; z-index:100;
+            display:flex; gap:10px; z-index:100; flex-wrap:wrap;
         }
         .toggle-btn {
             width:38px; height:38px; border-radius:50%;
@@ -211,6 +244,8 @@
         @media (max-width:400px) {
             .robot-wrapper { width:170px; height:170px; }
             .speech-bubble { font-size:0.7rem; padding:6px 12px; top:-48px; }
+            .quick-toggles { gap:6px; }
+            .toggle-btn { width:34px; height:34px; font-size:0.9rem; }
         }
     </style>
 </head>
@@ -221,16 +256,23 @@
     <div class="mood-history-bar" id="moodHistoryBar"></div>
     <div class="streak-counter" id="streakCounter">⚡ 0</div>
     <div class="tap-counter" id="tapCounter">Taps: 0</div>
-    <div class="toast" id="toast" style="position:fixed; bottom:30px; left:50%; transform:translate(-50%,20px); background:#00e0fc; color:#030a0c; padding:10px 24px; border-radius:30px; font-size:0.8rem; font-weight:bold; z-index:200; opacity:0; transition:0.3s; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.25);">⚡ 0</div>
+    <div class="mini-score" id="miniScore">🎯 0</div>
+    <div class="toast" id="toast" style="position:fixed; bottom:30px; left:50%; transform:translate(-50%,20px); background:#00e0fc; color:#030a0c; padding:10px 24px; border-radius:30px; font-size:0.8rem; font-weight:bold; z-index:200; opacity:0; transition:0.3s; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.25);"></div>
 
     <div class="quick-toggles">
-        <button class="toggle-btn active" id="vibrateToggle">📳</button>
-        <button class="toggle-btn active" id="soundToggle">🔊</button>
-        <button class="toggle-btn active" id="darkToggle">🌓</button>
+        <button class="toggle-btn" id="gyroToggle" title="Gyroscope Tilt">🧭</button>
+        <button class="toggle-btn" id="infoToggle" title="Location/Time/Weather">ℹ️</button>
+        <button class="toggle-btn" id="gameToggle" title="Mini Game: Catch Glitch">🎮</button>
+        <button class="toggle-btn active" id="vibrateToggle" title="Vibration">📳</button>
+        <button class="toggle-btn active" id="soundToggle" title="Sound">🔊</button>
+        <button class="toggle-btn active" id="darkToggle" title="Dark/Light">🌓</button>
     </div>
 
     <div class="robot-wrapper" id="robotWrapper">
         <div class="speech-bubble" id="speechBubble"></div>
+        <div class="antenna" id="antenna"></div>
+        <div class="ear left" id="earLeft"></div>
+        <div class="ear right" id="earRight"></div>
         <div class="head-casing" id="headCasing">
             <div class="face-screen">
                 <div class="face" id="face">
@@ -267,6 +309,7 @@
             let currentMood = 'smile';
             let soundEnabled = true;
             let vibrationEnabled = true;
+            let gyroEnabled = false;
             let audioCtx;
             let tapCount = 0, totalTaps = 0;
             let lastTapTime = 0;
@@ -275,11 +318,15 @@
             let frozen = false;
             let comboSequence = [];
             const comboTimeout = 2000;
+            let miniGameActive = false;
+            let miniScore = 0;
+            let glitchTimeout;
 
             const faceEl = document.getElementById('face');
             const mouthPath = document.getElementById('mouthPath');
             const streakEl = document.getElementById('streakCounter');
             const tapCounterEl = document.getElementById('tapCounter');
+            const miniScoreEl = document.getElementById('miniScore');
             const speechBubble = document.getElementById('speechBubble');
             const robotWrapper = document.getElementById('robotWrapper');
             const flashOverlay = document.getElementById('flashOverlay');
@@ -381,7 +428,7 @@
             function onDragStart(e){
                 if(isDestroyed) return; e.preventDefault(); cancelReturn(); stopPhysics(); isDragging=true; updateSizes();
                 const cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY;
-                dragStartX=cx; dragStartY=cy; initialPosX=posX; initialPosY=posY; moveSamples=[]; robotWrapper.style.transition='none'; robotWrapper.style.cursor='grabbing';
+                dragStartX=cx; dragStartY=cy; initialPosX=posX; initialPosY=posY; moveSamples=[]; robotWrapper.style.transition='none';
             }
             function onDragMove(e){
                 if(!isDragging) return; const cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY;
@@ -389,23 +436,28 @@
                 moveSamples.push({x:cx,y:cy,time:Date.now()}); if(moveSamples.length>4) moveSamples.shift();
             }
             function onDragEnd(){
-                if(!isDragging) return; isDragging=false; robotWrapper.style.cursor='grab';
+                if(!isDragging) return; isDragging=false;
                 if(moveSamples.length>=2){ const p=moveSamples[moveSamples.length-2], l=moveSamples[moveSamples.length-1], dt=(l.time-p.time)/1000; if(dt>0){vx=(l.x-p.x)/dt*0.6; vy=(l.y-p.y)/dt*0.6;} }
                 if(Math.abs(vx)>2||Math.abs(vy)>2) startPhysics(); else returnToCenter();
             }
             robotWrapper.addEventListener('mousedown',onDragStart); window.addEventListener('mousemove',onDragMove); window.addEventListener('mouseup',onDragEnd);
             robotWrapper.addEventListener('touchstart',onDragStart,{passive:false}); window.addEventListener('touchmove',onDragMove,{passive:false}); window.addEventListener('touchend',onDragEnd);
 
+            // Freeze: long press resets after mood change
             let freezeTimer;
-            robotWrapper.addEventListener('mousedown',(e)=>{ freezeTimer=setTimeout(()=>{ if(!isDragging){ frozen=true; applyMood('frozen',true); } },1000); });
-            robotWrapper.addEventListener('mouseup',()=>clearTimeout(freezeTimer));
-            robotWrapper.addEventListener('touchstart',(e)=>{ freezeTimer=setTimeout(()=>{ if(!isDragging){ frozen=true; applyMood('frozen',true); } },1000); });
-            robotWrapper.addEventListener('touchend',()=>clearTimeout(freezeTimer));
+            function startFreeze(e){
+                freezeTimer=setTimeout(()=>{ if(!isDragging){ frozen=true; applyMood('frozen',true); } },1000);
+            }
+            function clearFreeze(){ clearTimeout(freezeTimer); if(frozen){ frozen=false; } }
+            robotWrapper.addEventListener('mousedown',startFreeze); robotWrapper.addEventListener('mouseup',clearFreeze); robotWrapper.addEventListener('mouseleave',clearFreeze);
+            robotWrapper.addEventListener('touchstart',startFreeze); robotWrapper.addEventListener('touchend',clearFreeze); robotWrapper.addEventListener('touchmove',clearFreeze);
 
+            // Swipe up for detective
             let touchStartY;
             window.addEventListener('touchstart',(e)=>{touchStartY=e.touches[0].clientY;});
             window.addEventListener('touchend',(e)=>{ if(e.changedTouches[0].clientY<touchStartY-40&&touchStartY>window.innerHeight*0.8){ applyMood('detective',true); } });
 
+            // Keyboard shortcuts
             document.addEventListener('keydown',(e)=>{
                 const km={s:'smile',g:'glitch',l:'love',b:'bored',m:'mad',t:'thinking',w:'wink',c:'confused'};
                 if(km[e.key]){ applyMood(km[e.key],true); return; }
@@ -413,11 +465,19 @@
                 if(comboSequence.join('')==='smilelovewink'){ applyMood('surprised',true); showToast('🎉 COMBO! 🎉'); }
             });
 
+            // Click handler
             robotWrapper.addEventListener('click',(e)=>{
                 if(isDestroyed||isDragging||frozen) return;
-                totalTaps++; tapCounterEl.textContent=`Taps: ${totalTaps}`; tapCounterEl.classList.add('show'); setTimeout(()=>tapCounterEl.classList.remove('show'),2000);
+                if(miniGameActive && currentMood==='glitch') {
+                    miniScore++; miniScoreEl.textContent=`🎯 ${miniScore}`; miniScoreEl.classList.add('show');
+                    setTimeout(()=>miniScoreEl.classList.remove('show'),2000); showToast('Caught! +1');
+                    applyMood('smile'); return;
+                }
+                totalTaps++; tapCounterEl.textContent=`Taps: ${totalTaps}`; tapCounterEl.classList.add('show');
+                setTimeout(()=>tapCounterEl.classList.remove('show'),2000);
                 const now=Date.now(); tapCount=(now-lastTapTime<800)?tapCount+1:1; lastTapTime=now;
-                streakEl.textContent=`⚡ ${tapCount}`; streakEl.classList.add('show'); setTimeout(()=>streakEl.classList.remove('show'),1500);
+                streakEl.textContent=`⚡ ${tapCount}`; streakEl.classList.add('show');
+                setTimeout(()=>streakEl.classList.remove('show'),1500);
                 if(tapCount>=12) applyMood('glitch',true);
                 else if(tapCount>=8) applyMood('mad',true);
                 else if(tapCount>=5) applyMood('confused',true);
@@ -428,14 +488,114 @@
 
             function resetAutoChange(){
                 clearTimeout(autoChangeTimer); if(isDestroyed) return;
-                autoChangeTimer=setTimeout(()=>{ if(tapCount===0&&!isPhysicsActive&&!isDragging){ const moods=Object.keys(moodDefs); const m=moods[Math.floor(Math.random()*moods.length)]; if(m!==currentMood) applyMood(m,true); } resetAutoChange(); },5000+Math.random()*7000);
+                autoChangeTimer=setTimeout(()=>{ if(tapCount===0&&!isPhysicsActive&&!isDragging&&!miniGameActive){ const moods=Object.keys(moodDefs); const m=moods[Math.floor(Math.random()*moods.length)]; if(m!==currentMood) applyMood(m,true); } resetAutoChange(); },5000+Math.random()*7000);
             }
 
+            // ---------- GYROSCOPE TILT ----------
+            const gyroToggle = document.getElementById('gyroToggle');
+            gyroToggle.addEventListener('click', () => {
+                gyroEnabled = !gyroEnabled;
+                gyroToggle.classList.toggle('active', gyroEnabled);
+                if (gyroEnabled) {
+                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        DeviceOrientationEvent.requestPermission().then(permissionState => {
+                            if (permissionState === 'granted') {
+                                window.addEventListener('deviceorientation', handleOrientation);
+                                showToast('Gyro ON');
+                            } else { gyroEnabled = false; gyroToggle.classList.remove('active'); }
+                        }).catch(() => { gyroEnabled = false; gyroToggle.classList.remove('active'); });
+                    } else {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        showToast('Gyro ON');
+                    }
+                } else {
+                    window.removeEventListener('deviceorientation', handleOrientation);
+                    headCasing.style.transform = '';
+                    showToast('Gyro OFF');
+                }
+            });
+
+            function handleOrientation(e) {
+                if (!gyroEnabled || isDestroyed) return;
+                const beta = e.beta || 0;  // forward/back (-180 to 180)
+                const gamma = e.gamma || 0; // left/right (-90 to 90)
+                const tiltX = Math.max(-30, Math.min(30, beta * 0.4));
+                const tiltY = Math.max(-30, Math.min(30, gamma * 0.6));
+                headCasing.style.transition = 'transform 0.1s ease-out';
+                headCasing.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            }
+
+            // ---------- INFO TOGGLE: LOCATION, TIME, WEATHER ----------
+            const infoToggle = document.getElementById('infoToggle');
+            infoToggle.addEventListener('click', async () => {
+                infoToggle.classList.add('active');
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const dateStr = now.toLocaleDateString([], {weekday:'long', day:'numeric', month:'long'});
+                speechBubble.textContent = `🕒 ${timeStr} | 📅 ${dateStr}`;
+                speechBubble.classList.add('show');
+                setTimeout(()=> speechBubble.classList.remove('show'), 3000);
+
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                        try {
+                            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                            const data = await res.json();
+                            const temp = data.current_weather.temperature;
+                            const code = data.current_weather.weathercode;
+                            const emoji = getWeatherEmoji(code);
+                            speechBubble.textContent = `📍 ${lat.toFixed(1)} ${lon.toFixed(1)} | 🌡️ ${temp}°C ${emoji}`;
+                            speechBubble.classList.add('show');
+                            setTimeout(()=> speechBubble.classList.remove('show'), 4000);
+                        } catch { speechBubble.textContent = '🌤️ Weather unavailable'; speechBubble.classList.add('show'); setTimeout(()=> speechBubble.classList.remove('show'), 2000); }
+                    }, () => { speechBubble.textContent = '📍 Location denied'; speechBubble.classList.add('show'); setTimeout(()=> speechBubble.classList.remove('show'), 2000); });
+                }
+                setTimeout(()=> infoToggle.classList.remove('active'), 2000);
+            });
+
+            function getWeatherEmoji(code) {
+                if (code <= 1) return '☀️'; if (code <= 3) return '⛅';
+                if (code <= 48) return '☁️'; if (code <= 55) return '🌧️';
+                if (code <= 65) return '🌧️'; if (code <= 77) return '❄️'; return '🌈';
+            }
+
+            // ---------- MINI GAME: CATCH THE GLITCH ----------
+            const gameToggle = document.getElementById('gameToggle');
+            gameToggle.addEventListener('click', () => {
+                miniGameActive = !miniGameActive;
+                gameToggle.classList.toggle('active', miniGameActive);
+                if (miniGameActive) { miniScore=0; miniScoreEl.textContent='🎯 0'; miniScoreEl.classList.add('show'); showToast('Catch the glitch!'); scheduleGlitch(); }
+                else { clearTimeout(glitchTimeout); miniScoreEl.classList.remove('show'); showToast('Game over!'); }
+            });
+            function scheduleGlitch() {
+                if(!miniGameActive) return;
+                glitchTimeout=setTimeout(()=>{ if(Math.random()<0.4){ applyMood('glitch',false); speechBubble.textContent='⚠️ CATCH!'; speechBubble.classList.add('show'); setTimeout(()=>speechBubble.classList.remove('show'),800); setTimeout(()=>{ if(miniGameActive) applyMood('smile'); },1000); } scheduleGlitch(); },2000+Math.random()*3000);
+            }
+
+            // ---------- EASTER EGGS ----------
+            // Disco ball: triple-click antenna
+            let antennaClicks=0;
+            document.getElementById('antenna').addEventListener('click',(e)=>{
+                e.stopPropagation(); antennaClicks++;
+                if(antennaClicks===3){ antennaClicks=0; headCasing.classList.add('disco'); showToast('🪩 DISCO MODE! 🪩');
+                    setTimeout(()=>headCasing.classList.remove('disco'),3000);
+                    if(soundEnabled){ for(let i=0;i<10;i++) setTimeout(()=>playBeep('smile'),i*200); } }
+                setTimeout(()=>{antennaClicks=0;},1200);
+            });
+            // Hidden egg: triple-click left ear
+            let leftEarClicks=0;
+            document.getElementById('earLeft').addEventListener('click',(e)=>{
+                e.stopPropagation(); leftEarClicks++;
+                if(leftEarClicks===3){ leftEarClicks=0; speechBubble.textContent='🐣 You found an egg! 🌟'; speechBubble.classList.add('show');
+                    setTimeout(()=>speechBubble.classList.remove('show'),2000); applyMood('surprised',false); }
+                setTimeout(()=>{leftEarClicks=0;},1200);
+            });
+
+            // Toggles
             document.getElementById('soundToggle').addEventListener('click',function(){ soundEnabled=!soundEnabled; this.classList.toggle('active',soundEnabled); this.textContent=soundEnabled?'🔊':'🔇'; });
             document.getElementById('darkToggle').addEventListener('click',function(){ document.body.classList.toggle('dark'); this.classList.toggle('active'); });
             document.getElementById('vibrateToggle').addEventListener('click',function(){ vibrationEnabled=!vibrationEnabled; this.classList.toggle('active',vibrationEnabled); this.textContent=vibrationEnabled?'📳':'📴'; });
-
-            (async()=>{ try{ await navigator.wakeLock.request('screen'); } catch{} })();
 
             applyMood('smile',true);
             resetAutoChange();
