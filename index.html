@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action: manipulation">
-    <title>RonBot · Improved Companion</title>
+    <title>RonBot · Playground Fixed</title>
     <style>
         :root {
             --primary: #ff007f;
@@ -13,247 +13,219 @@
             --head-bg-light: #ffffff;
             --head-bg-dark: #1a1f2b;
             --screen-bg: #0d1117;
-            --panel-bg: rgba(255, 255, 255, 0.1);
-            --panel-border: rgba(255, 255, 255, 0.2);
             --text-color: #333;
         }
-
         body.dark {
             --bg-light: var(--bg-dark);
             --head-bg-light: var(--head-bg-dark);
-            --panel-bg: rgba(10, 15, 22, 0.7);
-            --panel-border: rgba(255, 0, 127, 0.3);
             --text-color: #eee;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Inter', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background: var(--bg-light);
             color: var(--text-color);
-            min-height: 100vh;
+            min-height:100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.5s ease;
+            transition: background 0.5s;
             overflow: hidden;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-
         .bg-grid {
-            position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background-image: radial-gradient(var(--panel-border) 1px, transparent 1px);
+            position:fixed; inset:0; z-index:0; pointer-events:none;
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
             background-size: 40px 40px;
         }
 
-        .stage {
-            position: relative; z-index: 2;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            perspective: 1200px;
-        }
-
-        .parallax-wrapper {
-            transition: transform 0.1s ease-out;
-            transform-style: preserve-3d;
-        }
-
-        .robot-head {
+        /* ---- Robot wrapper (for drag) ---- */
+        .robot-wrapper {
+            position: relative;
             width: min(220px, 50vmin);
             height: min(220px, 50vmin);
+            cursor: grab;
+            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.1, 1.8);
+            z-index: 10;
+        }
+        .robot-wrapper:active { cursor: grabbing; }
+        .robot-wrapper.dragging { transition: none; }
+
+        /* ---- Head ---- */
+        .robot-head {
+            width: 100%; height: 100%;
             background: var(--head-bg-light);
             border-radius: 32px;
             box-shadow: 0 30px 60px rgba(0,0,0,0.15), inset 0 8px 25px rgba(255,255,255,0.5), inset 0 -10px 20px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: center;
             position: relative;
             animation: float 6s ease-in-out infinite;
             transition: background 0.4s, box-shadow 0.4s;
-            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         body.dark .robot-head {
             box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 8px 25px rgba(255,255,255,0.05), inset 0 -10px 20px rgba(0,0,0,0.4);
         }
-        @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-15px); } }
+        @keyframes float {
+            0%,100%{ transform: translateY(0); }
+            50%{ transform: translateY(-12px); }
+        }
 
-        .ear { position: absolute; top: 50%; transform: translateY(-50%); width: 14px; height: 45%; background: #3a4a5a; border-radius: 7px; z-index: -1; }
-        .ear.left { left: -8px; } .ear.right { right: -8px; }
+        /* Ears */
+        .ear {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            width: 14px; height: 45%;
+            background: #3a4a5a;
+            border-radius: 7px;
+            z-index: -1;
+        }
+        .ear.left { left: -8px; }
+        .ear.right { right: -8px; }
 
+        /* LED strips */
         .led-strip {
-            position: absolute; top: 50%; transform: translateY(-50%); width: 5px; height: 50%; border-radius: 3px;
-            background: var(--primary); box-shadow: 0 0 12px var(--primary-glow); z-index: 20; opacity: 0.8;
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 5px; height: 50%; border-radius: 3px;
+            background: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+            z-index: 20; opacity: 0.8;
             transition: background 0.3s, box-shadow 0.3s;
         }
-        .led-strip.left { left: 14px; } .led-strip.right { right: 14px; }
+        .led-strip.left { left: 14px; }
+        .led-strip.right { right: 14px; }
 
+        /* Antenna */
         .antenna {
             position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
-            width: 6px; height: 36px; background: #4a5a6a; border-radius: 4px 4px 0 0; z-index: 6;
+            width: 6px; height: 36px;
+            background: #4a5a6a;
+            border-radius: 4px 4px 0 0;
+            z-index: 6;
         }
         .antenna::after {
             content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-            width: 16px; height: 16px; background: var(--primary); border-radius: 50%;
+            width: 16px; height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
             box-shadow: 0 0 18px var(--primary), 0 0 35px var(--primary-glow);
             animation: antenna-pulse 2s infinite;
         }
-        @keyframes antenna-pulse { 0%,100%{ opacity: 0.7; transform: translateX(-50%) scale(1); } 50%{ opacity: 1; transform: translateX(-50%) scale(1.2); } }
+        @keyframes antenna-pulse {
+            0%,100%{ opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50%{ opacity: 1; transform: translateX(-50%) scale(1.25); }
+        }
 
+        /* Screen */
         .screen {
-            width: 75%; height: 75%; background: var(--screen-bg); border-radius: 20px;
-            border: 3px solid var(--primary); box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 0 30px var(--primary-glow);
-            display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+            width: 75%; height: 75%;
+            background: var(--screen-bg);
+            border-radius: 20px;
+            border: 3px solid var(--primary);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 0 30px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .scanline {
-            position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.02) 50%, transparent);
-            background-size: 100% 6px; pointer-events: none; z-index: 5; opacity: 0.4;
-        }
-
-        .glare {
-            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(45deg, rgba(255,255,255,0.08) 0%, transparent 40%);
-            transform: rotate(15deg); pointer-events: none; z-index: 4; transition: transform 0.1s ease-out;
-        }
-
+        /* Face */
         .face-container {
-            display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            z-index: 2;
         }
-
         .eyes { display: flex; gap: 30px; }
-
         .eye {
-            width: 18px; height: 18px; background: var(--primary); border-radius: 4px;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 18px; height: 18px;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
             box-shadow: 0 0 15px var(--primary-glow);
-            position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
         .pupil {
-            width: 8px; height: 8px; background: #fff; border-radius: 2px;
-            position: absolute; transition: transform 0.05s linear;
+            width: 8px; height: 8px;
+            background: #fff;
+            border-radius: 2px;
+            position: absolute;
+            transition: transform 0.05s linear;
             box-shadow: 0 0 8px rgba(255,255,255,0.9);
         }
-
         .mouth {
-            height: 14px; width: 60px; border-bottom: 4px solid var(--primary);
-            border-radius: 0 0 30px 30px; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            height: 14px; width: 60px;
+            border-bottom: 4px solid var(--primary);
+            border-radius: 0 0 30px 30px;
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
             filter: drop-shadow(0 4px 10px var(--primary-glow));
         }
 
-        /* All mood classes (unchanged but extended with new ones) */
-        .face-container.smile .eye { border-radius: 10px 10px 2px 2px; height: 10px; width: 18px; background: #50e890; }
-        .face-container.smile .mouth { border-bottom: 4px solid #50e890; }
-        .face-container.bored .eye { height: 5px; border-radius: 2px; transform: translateY(6px); opacity: 0.6; }
-        .face-container.bored .mouth { width: 20px; height: 4px; background: var(--primary); border-radius: 2px; border: none; opacity: 0.6; }
-        .face-container.mad .eye { height: 6px; transform: rotate(20deg); background: #ff5e7a; }
-        .face-container.mad .eye:last-child { transform: rotate(-20deg); }
-        .face-container.mad .mouth { border-top: 4px solid #ff5e7a; border-bottom: none; border-radius: 30px 30px 0 0; }
-        .face-container.thinking .eye:first-child { transform: translateX(-4px); }
-        .face-container.thinking .eye:last-child { transform: translateX(4px); }
-        .face-container.thinking .mouth { width: 12px; height: 12px; background: var(--primary); border-radius: 50%; margin-left: 20px; border: none; }
-        .face-container.surprised .eye { width: 18px; height: 18px; border-radius: 50%; background: #ffe06b; }
-        .face-container.surprised .mouth { width: 24px; height: 24px; border: 3px solid #ffe06b; border-radius: 50%; }
-        .face-container.love .eye { background: transparent; box-shadow: none; width: 20px; height: 18px; position: relative; }
-        .face-container.love .eye::before, .face-container.love .eye::after { content: ''; position: absolute; width: 10px; height: 16px; background: #ff5e7a; border-radius: 50px 50px 0 0; box-shadow: 0 0 12px rgba(255,94,122,0.6); }
-        .face-container.love .eye::before { left: 0; transform: rotate(-45deg); transform-origin: bottom left; }
-        .face-container.love .eye::after { right: 0; transform: rotate(45deg); transform-origin: bottom right; }
-        .face-container.love .mouth { width: 22px; height: 12px; border-bottom: 3px solid #ff5e7a; border-radius: 0 0 20px 20px; }
-        .face-container.wink .eye:first-child { height: 4px; border-radius: 2px; margin-top: 8px; transform: none !important; }
-        .face-container.wink .eye:last-child { border-radius: 10px 10px 2px 2px; height: 10px; width: 18px; background: #ffe06b; }
-        .face-container.wink .mouth { border-bottom-color: #ffe06b; }
-        .face-container.confused .eye { width: 16px; height: 16px; border-radius: 50%; background: transparent; border: 2px solid var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
-        .face-container.confused .eye::after { content: ''; position: absolute; width: 4px; height: 4px; background: var(--primary); border-radius: 50%; top: 4px; left: 4px; }
-        .face-container.confused .mouth { width: 22px; height: 22px; border: 2px solid var(--primary); border-radius: 50%; border-top-color: transparent; border-left-color: transparent; transform: rotate(45deg); }
-        .face-container.asleep .eye { height: 3px; width: 14px; border-radius: 2px; opacity: 0.5; margin-top: 8px; background: #fff; }
-        .face-container.asleep .mouth { width: 16px; height: 6px; background: #fff; opacity: 0.5; border-radius: 2px; border: none; }
-        .face-container.glitch .eye { animation: glitch-eyes 0.15s infinite; background: #ff5e7a; }
-        .face-container.glitch .mouth { background: #ff5e7a; height: 4px; width: 30px; border-radius: 0; animation: glitch-mouth 0.1s infinite; border: none; }
-        @keyframes glitch-eyes { 0%{transform: translate(0);} 25%{transform: translate(-2px, 1px);} 50%{transform: translate(2px, -1px);} 75%{transform: translate(-1px, -2px);} 100%{transform: translate(1px, 1px);} }
-        @keyframes glitch-mouth { 0%{transform: scaleX(1);} 50%{transform: scaleX(1.5);} 100%{transform: scaleX(0.7);} }
-        .face-container.charging .eye { animation: pulse-eye 1s infinite alternate; background: #50e890; }
-        .face-container.charging .mouth { width: 40px; height: 8px; background: rgba(0,0,0,0.5); border: 1px solid #50e890; border-radius: 4px; position: relative; overflow: hidden; }
-        .face-container.charging .mouth::after { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: #50e890; animation: progress 2s infinite ease-in-out; }
-        @keyframes pulse-eye { 0%{opacity:0.4; transform:scale(0.8);} 100%{opacity:1; transform:scale(1.1);} }
-        @keyframes progress { 0%{transform: translateX(-100%);} 100%{transform: translateX(0);} }
-        .face-container.busy .eye { width: 10px; height: 10px; border-radius: 50%; animation: spin-busy 0.6s linear infinite; }
-        .face-container.busy .eye:first-child { animation-delay: 0.1s; }
-        .face-container.busy .mouth { width: 36px; height: 4px; background: var(--primary); border-radius: 2px; animation: pulse-busy 1s ease-in-out infinite; border: none; }
-        @keyframes spin-busy { 0%{transform: rotate(0) scale(1);} 50%{transform: rotate(180deg) scale(0.7);} 100%{transform: rotate(360deg) scale(1);} }
-        @keyframes pulse-busy { 0%,100%{opacity:0.4; width:36px;} 50%{opacity:1; width:50px;} }
-
-        /* New moods */
-        .face-container.excited .eye { width: 10px; height: 16px; border-radius: 50%; animation: bounce-eye 0.4s infinite alternate; }
-        .face-container.excited .mouth { width: 26px; height: 14px; border: 3px solid var(--primary); border-radius: 50%; border-bottom: none; }
-        @keyframes bounce-eye { 0%{ transform: translateY(0); } 100%{ transform: translateY(-3px); } }
-
-        .face-container.cool .eye { height: 4px; width: 18px; border-radius: 2px; background: #ffe06b; }
-        .face-container.cool .eye:first-child { transform: rotate(-20deg); }
-        .face-container.cool .eye:last-child { transform: rotate(20deg); }
-        .face-container.cool .mouth { width: 30px; height: 6px; background: #ffe06b; border-radius: 3px; border: none; }
-
-        .particles-container {
-            position: absolute; inset: 0; pointer-events: none; z-index: 20;
+        /* Mood styles (fully present) */
+        .face-container.smile .eye { border-radius:10px 10px 2px 2px; height:10px; width:18px; background:#50e890; }
+        .face-container.smile .mouth { border-bottom-color:#50e890; }
+        .face-container.bored .eye { height:5px; border-radius:2px; transform:translateY(6px); opacity:0.6; background:var(--primary); }
+        .face-container.bored .mouth { width:20px; height:4px; background:var(--primary); border-radius:2px; border:none; opacity:0.6; }
+        .face-container.mad .eye { height:6px; transform:rotate(20deg); background:#ff5e7a; }
+        .face-container.mad .eye:last-child { transform:rotate(-20deg); }
+        .face-container.mad .mouth { border-top:4px solid #ff5e7a; border-bottom:none; border-radius:30px 30px 0 0; }
+        .face-container.thinking .eye:first-child { transform:translateX(-4px); }
+        .face-container.thinking .eye:last-child { transform:translateX(4px); }
+        .face-container.thinking .mouth { width:12px; height:12px; background:var(--primary); border-radius:50%; margin-left:20px; border:none; }
+        .face-container.surprised .eye { width:18px; height:18px; border-radius:50%; background:#ffe06b; }
+        .face-container.surprised .mouth { width:24px; height:24px; border:3px solid #ffe06b; border-radius:50%; border-bottom:none; }
+        .face-container.love .eye { background:transparent; box-shadow:none; width:20px; height:18px; position:relative; }
+        .face-container.love .eye::before, .face-container.love .eye::after {
+            content:''; position:absolute; width:10px; height:16px; background:#ff5e7a; border-radius:50px 50px 0 0; box-shadow:0 0 12px rgba(255,94,122,0.6);
         }
-        .particle {
-            position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
-            animation: particle-fly 0.8s ease-out forwards;
-        }
-        @keyframes particle-fly {
-            0% { opacity: 1; transform: translate(0,0) scale(1); }
-            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
-        }
+        .face-container.love .eye::before { left:0; transform:rotate(-45deg); transform-origin:bottom left; }
+        .face-container.love .eye::after { right:0; transform:rotate(45deg); transform-origin:bottom right; }
+        .face-container.love .mouth { width:22px; height:12px; border-bottom:3px solid #ff5e7a; border-radius:0 0 20px 20px; }
+        .face-container.wink .eye:first-child { height:4px; border-radius:2px; margin-top:8px; transform:none; background:var(--primary); }
+        .face-container.wink .eye:last-child { border-radius:10px 10px 2px 2px; height:10px; width:18px; background:#ffe06b; }
+        .face-container.wink .mouth { border-bottom-color:#ffe06b; }
+        .face-container.confused .eye { width:16px; height:16px; border-radius:50%; background:transparent; border:2px solid var(--primary); box-shadow:0 0 8px var(--primary-glow); }
+        .face-container.confused .eye::after { content:''; position:absolute; width:4px; height:4px; background:var(--primary); border-radius:50%; top:4px; left:4px; }
+        .face-container.confused .mouth { width:22px; height:22px; border:2px solid var(--primary); border-radius:50%; border-top-color:transparent; border-left-color:transparent; transform:rotate(45deg); }
+        .face-container.asleep .eye { height:3px; width:14px; border-radius:2px; opacity:0.5; margin-top:8px; background:#fff; }
+        .face-container.asleep .mouth { width:16px; height:6px; background:#fff; opacity:0.5; border-radius:2px; border:none; }
+        .face-container.glitch .eye { animation:glitch-eyes 0.15s infinite; background:#ff5e7a; }
+        .face-container.glitch .mouth { background:#ff5e7a; height:4px; width:30px; border-radius:0; animation:glitch-mouth 0.1s infinite; border:none; }
+        @keyframes glitch-eyes { 0%{transform:translate(0);}25%{transform:translate(-2px,1px);}50%{transform:translate(2px,-1px);}75%{transform:translate(-1px,-2px);}100%{transform:translate(1px,1px);} }
+        @keyframes glitch-mouth { 0%{transform:scaleX(1);}50%{transform:scaleX(1.5);}100%{transform:scaleX(0.7);} }
+        .face-container.charging .eye { animation:pulse-eye 1s infinite alternate; background:#50e890; }
+        .face-container.charging .mouth { width:40px; height:8px; background:rgba(0,0,0,0.5); border:1px solid #50e890; border-radius:4px; position:relative; overflow:hidden; }
+        .face-container.charging .mouth::after { content:''; position:absolute; left:0; top:0; height:100%; width:100%; background:#50e890; animation:progress 2s infinite ease-in-out; }
+        @keyframes pulse-eye { 0%{opacity:0.4;transform:scale(0.8);}100%{opacity:1;transform:scale(1.1);} }
+        @keyframes progress { 0%{transform:translateX(-100%);}100%{transform:translateX(0);} }
+        .face-container.busy .eye { width:10px; height:10px; border-radius:50%; animation:spin-busy 0.6s linear infinite; background:var(--primary); }
+        .face-container.busy .eye:first-child { animation-delay:0.1s; }
+        .face-container.busy .mouth { width:36px; height:4px; background:var(--primary); border-radius:2px; animation:pulse-busy 1s ease-in-out infinite; border:none; }
+        @keyframes spin-busy { 0%{transform:rotate(0) scale(1);}50%{transform:rotate(180deg) scale(0.7);}100%{transform:rotate(360deg) scale(1);} }
+        @keyframes pulse-busy { 0%,100%{opacity:0.4;width:36px;}50%{opacity:1;width:50px;} }
+        .face-container.purring .eye { height:2px; border-radius:2px; transform:translateY(6px); background:#ff9f9f; }
+        .face-container.purring .mouth { width:18px; height:4px; background:#ff9f9f; border:none; opacity:0.7; }
+        .face-container.dizzy .eye { width:10px; height:14px; border-radius:50%; animation:spin-eye 0.3s infinite; background:#ffe06b; }
+        @keyframes spin-eye { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
 
-        .emoji-accent { position: absolute; top: 10px; right: 12px; font-size: 1rem; z-index: 6; pointer-events: none; }
-        .lock-icon { position: absolute; top: 10px; left: 12px; font-size: 0.9rem; z-index: 6; opacity: 0; transition: 0.2s; }
-        .locked .lock-icon { opacity: 1; }
-
-        .speech-bubble {
-            position: absolute; top: -60px; right: -20px; background: rgba(0,0,0,0.8); color: white;
-            padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
-            border: 1px solid var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            opacity: 0; transform: translateY(10px); transition: 0.3s;
-            pointer-events: none; z-index: 50; white-space: nowrap;
+        /* Accessories */
+        .accessory {
+            position: absolute; pointer-events: none; z-index: 30;
+            font-size: 2rem; text-shadow: 0 0 10px var(--primary-glow);
         }
-        .speech-bubble.show { opacity: 1; transform: translateY(0); }
+        .accessory.hat { top: -40px; left: 50%; transform: translateX(-50%); }
+        .accessory.glasses { top: 0px; left: 50%; transform: translateX(-50%); }
 
-        .shadow {
-            width: 120px; height: 15px; background: radial-gradient(ellipse, rgba(0,0,0,0.15) 0%, transparent 70%);
-            border-radius: 50%; margin-top: 20px; animation: shadow-scale 6s ease-in-out infinite;
-        }
-        @keyframes shadow-scale { 0%,100%{transform:scale(1); opacity:0.8;} 50%{transform:scale(0.8); opacity:0.4;} }
-
-        .quick-toggles { position: fixed; top: 20px; right: 20px; display: flex; gap: 12px; z-index: 100; }
-        .toggle-btn {
-            width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--panel-border);
-            background: var(--panel-bg); backdrop-filter: blur(8px); cursor: pointer;
-            font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
-            color: var(--text-color); transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .toggle-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 15px var(--primary-glow); }
-
-        .settings-btn {
-            position: fixed; top: 20px; left: 20px; z-index: 100;
-            width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--panel-border);
-            background: var(--panel-bg); backdrop-filter: blur(8px); cursor: pointer;
-            font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
-            color: var(--text-color); transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .dashboard {
-            position: fixed; top: 80px; left: 20px; width: 300px;
-            background: var(--panel-bg); backdrop-filter: blur(15px);
-            border: 1px solid var(--panel-border); border-radius: 16px;
-            padding: 20px; z-index: 90; display: none;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-        }
-        .dashboard.open { display: block; }
-        .dashboard input, .dashboard select { width: 100%; padding: 8px; margin: 6px 0; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(0,0,0,0.3); color: white; }
-        .dashboard button { background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
-        .phrase-editor { display: flex; gap: 6px; margin-bottom: 8px; }
-        .phrase-editor input { flex: 1; }
-
+        /* Toast */
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 20px);
             background: var(--primary); color: white; padding: 10px 24px; border-radius: 30px;
@@ -262,89 +234,66 @@
         }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-        @media (max-width: 600px) {
-            .robot-head { width: 180px; height: 180px; }
-            .dashboard { width: 260px; }
+        /* Streak counter */
+        .streak-counter {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: white; padding: 6px 16px; border-radius: 20px;
+            font-weight: bold; z-index: 200; opacity: 0; transition: 0.3s;
         }
+        .streak-counter.show { opacity: 1; }
+
+        /* Toggle buttons */
+        .quick-toggles {
+            position: fixed; top: 20px; right: 20px; display: flex; gap: 12px; z-index: 100;
+        }
+        .toggle-btn {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+            font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
+            color: #eee; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .toggle-btn:hover { transform: translateY(-2px); }
     </style>
 </head>
 <body class="dark">
 
 <div class="bg-grid"></div>
 <div class="toast" id="toast">👋 Hello!</div>
+<div class="streak-counter" id="streakCounter">🔥 0</div>
 
-<!-- Settings Dashboard -->
-<button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
-<aside class="dashboard" id="dashboard">
-    <h3 style="color:var(--primary); margin-bottom:12px;">Robot Settings</h3>
-    <label style="font-size:0.7rem;">Primary Color</label>
-    <input type="color" id="colorPicker" value="#ff007f">
-    <label style="font-size:0.7rem; margin-top:8px;">Mood Queue (comma separated)</label>
-    <input type="text" id="queueInput" value="smile,bored,mad,thinking,surprised,love,wink,confused,asleep,glitch,charging,busy,excited,cool">
-    <button id="applyQueueBtn">Apply Queue</button>
-    <div style="margin-top:8px;">
-        <label style="font-size:0.7rem;">Customize phrase for <span id="phraseMoodName">smile</span></label>
-        <div class="phrase-editor">
-            <input type="text" id="phraseInput" placeholder="Enter phrase">
-            <button id="savePhraseBtn">Save</button>
-        </div>
-    </div>
-    <div style="margin-top:15px; display:flex; gap:8px;">
-        <button id="savePlaylistBtn">Save Playlist</button>
-        <button id="loadPlaylistBtn">Load</button>
-    </div>
-    <select id="playlistSelect" style="width:100%;"><option value="">Select playlist...</option></select>
-    <div style="margin-top:15px; display:flex; gap:8px;">
-        <button id="exportBtn">Export</button>
-        <button id="importBtn">Import</button>
-        <input type="file" id="importFile" accept=".json" style="display:none;">
-    </div>
-    <p style="font-size:0.6rem; margin-top:15px; opacity:0.6; text-align:center;">RonBot v3.1</p>
-</aside>
-
-<!-- Quick Toggles -->
 <div class="quick-toggles">
+    <button class="toggle-btn active" id="vibrateToggle" title="Vibration">📳</button>
     <button class="toggle-btn" id="soundToggle" title="Sound">🔇</button>
     <button class="toggle-btn active" id="darkToggle" title="Dark/Light">🌓</button>
 </div>
 
-<!-- Main Stage -->
-<main class="stage" id="stage">
-    <div class="parallax-wrapper" id="parallax">
-        <div class="speech-bubble" id="speechBubble"></div>
-        <div class="robot-head" id="ronbot">
-            <div class="antenna"></div>
-            <div class="ear left"></div>
-            <div class="ear right"></div>
-            <div class="led-strip left"></div>
-            <div class="led-strip right"></div>
-            <span class="lock-icon" id="lockIcon">🔒</span>
-            <div class="screen" id="screen">
-                <div class="glare" id="glare"></div>
-                <div class="scanline"></div>
-                <div class="face-container" id="face">
-                    <div class="eyes">
-                        <div class="eye"><div class="pupil"></div></div>
-                        <div class="eye"><div class="pupil"></div></div>
-                    </div>
-                    <div class="mouth"></div>
+<!-- Draggable robot wrapper -->
+<div class="robot-wrapper" id="robotWrapper">
+    <div class="robot-head" id="ronbot">
+        <div class="antenna"></div>
+        <div class="ear left"></div>
+        <div class="ear right"></div>
+        <div class="led-strip left"></div>
+        <div class="led-strip right"></div>
+
+        <div class="screen">
+            <div class="face-container" id="face">
+                <div class="eyes">
+                    <div class="eye"><div class="pupil"></div></div>
+                    <div class="eye"><div class="pupil"></div></div>
                 </div>
-                <div class="particles-container" id="particlesContainer"></div>
-                <span class="emoji-accent" id="emojiAccent"></span>
+                <div class="mouth"></div>
             </div>
+            <span class="accessory hat" id="hatAccessory" style="display:none;">🎩</span>
+            <span class="accessory glasses" id="glassesAccessory" style="display:none;">👓</span>
         </div>
-        <div class="shadow"></div>
     </div>
-</main>
+</div>
 
 <script>
     (() => {
-        // ----- EXTENDED MOOD DEFINITIONS -----
-        const defaultPhrases = {
-            smile: 'Happy!', bored: 'Meh.', mad: 'Grrr!', thinking: 'Hmm...', surprised: 'Wow!',
-            love: 'Love!', wink: 'Hey!', confused: 'Huh?', asleep: 'Zzz...', glitch: 'ERROR',
-            charging: 'Charging...', busy: 'Processing...', excited: 'Yay!', cool: '😎'
-        };
         const moodDefs = {
             smile:    { color: '#50e890', freq: 440, emoji: '😊' },
             bored:    { color: '#4af0ff', freq: 220, emoji: '😑' },
@@ -358,101 +307,46 @@
             glitch:   { color: '#ff5e7a', freq: 0, emoji: '⚠️' },
             charging: { color: '#50e890', freq: 500, emoji: '🔋' },
             busy:     { color: '#4af0ff', freq: 660, emoji: '⚙️' },
-            excited:  { color: '#ffe06b', freq: 700, emoji: '🎉' },
-            cool:     { color: '#ffe06b', freq: 550, emoji: '😎' }
+            purring:  { color: '#ff9f9f', freq: 300, emoji: '😻' },
+            dizzy:    { color: '#ffe06b', freq: 700, emoji: '🥴' }
         };
 
-        let customPhrases = JSON.parse(localStorage.getItem('customPhrases')) || {};
-        function getPhrase(mood) { return customPhrases[mood] || defaultPhrases[mood] || mood; }
-
-        // State
-        let moodQueue = JSON.parse(localStorage.getItem('moodQueue')) || Object.keys(moodDefs);
-        let currentIdx = parseInt(localStorage.getItem('currentMoodIdx')) || 0;
+        let currentMood = 'smile';
         let isLocked = false;
         let soundEnabled = false;
+        let vibrationEnabled = true;
         let audioCtx;
+        let streakCount = 0;
+        let lastTapTime = 0;
+        let longPressTimer;
+        let accessories = { hat: false, glasses: false };
 
-        // DOM Elements
+        // DOM refs
         const face = document.getElementById('face');
-        const screen = document.getElementById('screen');
-        const speechBubble = document.getElementById('speechBubble');
-        const emojiAccent = document.getElementById('emojiAccent');
-        const lockIcon = document.getElementById('lockIcon');
-        const robotHead = document.getElementById('ronbot');
-        const parallax = document.getElementById('parallax');
-        const glare = document.getElementById('glare');
         const toast = document.getElementById('toast');
+        const streakEl = document.getElementById('streakCounter');
+        const hatEl = document.getElementById('hatAccessory');
+        const glassesEl = document.getElementById('glassesAccessory');
         const pupils = document.querySelectorAll('.pupil');
-        const particlesContainer = document.getElementById('particlesContainer');
-        const darkToggle = document.getElementById('darkToggle');
-        const soundToggle = document.getElementById('soundToggle');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const dashboard = document.getElementById('dashboard');
-        const colorPicker = document.getElementById('colorPicker');
-        const queueInput = document.getElementById('queueInput');
-        const applyQueueBtn = document.getElementById('applyQueueBtn');
-        const phraseInput = document.getElementById('phraseInput');
-        const savePhraseBtn = document.getElementById('savePhraseBtn');
-        const phraseMoodName = document.getElementById('phraseMoodName');
-        const playlistSelect = document.getElementById('playlistSelect');
-        const savePlaylistBtn = document.getElementById('savePlaylistBtn');
-        const loadPlaylistBtn = document.getElementById('loadPlaylistBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const importBtn = document.getElementById('importBtn');
-        const importFile = document.getElementById('importFile');
-
-        // ----- CORE FUNCTIONS -----
-        function updateTheme(color) {
-            document.documentElement.style.setProperty('--primary', color);
-            document.documentElement.style.setProperty('--primary-glow', `rgba(${hexToRgb(color)}, 0.6)`);
-        }
-        function hexToRgb(hex) {
-            const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-            return `${r}, ${g}, ${b}`;
-        }
-
-        function spawnParticles(color) {
-            for (let i=0; i<8; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.backgroundColor = color;
-                p.style.left = Math.random() * 80 + '%';
-                p.style.top = Math.random() * 80 + '%';
-                p.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
-                p.style.setProperty('--dy', (Math.random() - 0.5) * 60 + 'px');
-                particlesContainer.appendChild(p);
-                setTimeout(() => p.remove(), 800);
-            }
-        }
+        const robotWrapper = document.getElementById('robotWrapper');
 
         function applyMood(mood) {
             const def = moodDefs[mood];
-            updateTheme(def.color);
+            document.documentElement.style.setProperty('--primary', def.color);
+            document.documentElement.style.setProperty('--primary-glow', `rgba(${hexToRgb(def.color)}, 0.6)`);
             face.className = 'face-container ' + mood;
-            emojiAccent.textContent = def.emoji;
-            speechBubble.textContent = getPhrase(mood);
-            speechBubble.classList.add('show');
-            setTimeout(() => speechBubble.classList.remove('show'), 1500);
-            playSound(def.freq);
-            spawnParticles(def.color);
-            if (navigator.vibrate) navigator.vibrate(30);
-            localStorage.setItem('currentMoodIdx', currentIdx);
-            phraseMoodName.textContent = mood;
+            currentMood = mood;
+            if (def.freq && soundEnabled) playSound(def.freq);
+            if (vibrationEnabled && navigator.vibrate) navigator.vibrate(15);
+            showToast(mood);
         }
 
-        function changeMood(index) {
-            if (isLocked) return;
-            if (index !== undefined) {
-                currentIdx = ((index % moodQueue.length) + moodQueue.length) % moodQueue.length;
-            } else {
-                currentIdx = (currentIdx + 1) % moodQueue.length;
-            }
-            applyMood(moodQueue[currentIdx]);
-            showToast(moodQueue[currentIdx]);
+        function hexToRgb(hex) {
+            const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+            return `${r},${g},${b}`;
         }
 
         function playSound(freq) {
-            if (!soundEnabled || freq === 0) return;
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -465,155 +359,208 @@
         }
 
         function showToast(msg) {
-            toast.textContent = msg; toast.classList.add('show');
+            toast.textContent = msg;
+            toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 1500);
         }
 
-        // ----- IDLE & INTERACTIONS -----
-        let autoInterval;
-        function resetAutoCycle() {
-            clearInterval(autoInterval);
-            if (!isLocked) autoInterval = setInterval(() => changeMood(), 4000);
-        }
+        // ---- DRAG & THROW ----
+        let isDragging = false;
+        let startX, startY, offsetX = 0, offsetY = 0;
 
-        robotHead.addEventListener('click', (e) => {
-            if (e.target === screen || screen.contains(e.target)) return;
-            changeMood(); resetAutoCycle();
-        });
-        screen.addEventListener('click', (e) => {
-            e.stopPropagation();
-            changeMood(); resetAutoCycle();
+        robotWrapper.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return; // exclude ears/antenna
+            isDragging = true;
+            startX = e.clientX - offsetX;
+            startY = e.clientY - offsetY;
+            robotWrapper.classList.add('dragging');
+            robotWrapper.style.animation = 'none';
         });
 
-        screen.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            isLocked = !isLocked;
-            robotHead.classList.toggle('locked', isLocked);
-            if (isLocked) clearInterval(autoInterval); else resetAutoCycle();
-            showToast(isLocked ? 'Locked' : 'Unlocked');
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            offsetX = e.clientX - startX;
+            offsetY = e.clientY - startY;
+            robotWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         });
 
-        let dragStartX = 0;
-        screen.addEventListener('mousedown', (e) => { dragStartX = e.clientX; });
-        screen.addEventListener('mouseup', (e) => {
-            if (Math.abs(e.clientX - dragStartX) > 40) {
-                changeMood(e.clientX > dragStartX ? currentIdx + 1 : currentIdx - 1);
-                resetAutoCycle();
-            }
-        });
-        screen.addEventListener('touchstart', (e) => { dragStartX = e.touches[0].clientX; });
-        screen.addEventListener('touchend', (e) => {
-            const diff = e.changedTouches[0].clientX - dragStartX;
-            if (Math.abs(diff) > 40) {
-                changeMood(diff > 0 ? currentIdx + 1 : currentIdx - 1);
-                resetAutoCycle();
-            }
+        window.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            robotWrapper.classList.remove('dragging');
+            offsetX = 0; offsetY = 0;
+            robotWrapper.style.transform = 'translate(0,0)';
+            robotWrapper.style.animation = '';
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') changeMood(currentIdx + 1);
-            else if (e.key === 'ArrowLeft') changeMood(currentIdx - 1);
-            else if (e.key === ' ') { e.preventDefault(); changeMood(Math.floor(Math.random() * moodQueue.length)); }
-            else if (e.key >= '1' && e.key <= '9') { const idx = parseInt(e.key) - 1; if (idx < moodQueue.length) changeMood(idx); }
-            resetAutoCycle();
+        // Touch drag
+        robotWrapper.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('ear') || e.target.classList.contains('antenna')) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            isDragging = true;
+            startX = touch.clientX - offsetX;
+            startY = touch.clientY - offsetY;
+            robotWrapper.classList.add('dragging');
+            robotWrapper.style.animation = 'none';
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            offsetX = touch.clientX - startX;
+            offsetY = touch.clientY - startY;
+            robotWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        });
+        window.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            robotWrapper.classList.remove('dragging');
+            offsetX = 0; offsetY = 0;
+            robotWrapper.style.transform = 'translate(0,0)';
+            robotWrapper.style.animation = '';
         });
 
-        // Mouse tracking & parallax
-        document.addEventListener('mousemove', (e) => {
-            const rect = screen.getBoundingClientRect();
-            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-                const dx = (e.clientX - cx) / (rect.width/2) * 5;
-                const dy = (e.clientY - cy) / (rect.height/2) * 5;
-                pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
+        // ---- CLICK TO CYCLE MOOD ----
+        robotWrapper.addEventListener('click', (e) => {
+            if (isDragging) return;
+            const now = Date.now();
+            if (now - lastTapTime < 800) {
+                streakCount++;
+                streakEl.textContent = `🔥 ${streakCount}`;
+                streakEl.classList.add('show');
+                setTimeout(() => streakEl.classList.remove('show'), 2000);
+                if (streakCount === 10) { applyMood('surprised'); showToast('10 in a row!'); }
+                else if (streakCount === 50) { applyMood('love'); showToast('50! Craaazy!'); }
             } else {
-                pupils.forEach(p => p.style.transform = 'translate(0,0)');
+                streakCount = 0;
             }
-            const x = (window.innerWidth/2 - e.pageX) / 30;
-            const y = (window.innerHeight/2 - e.pageY) / 30;
-            parallax.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
-            const relX = (e.clientX - rect.left) / rect.width;
-            const relY = (e.clientY - rect.top) / rect.height;
-            glare.style.transform = `translate(${(relX-0.5)*40}px, ${(relY-0.5)*40}px) rotate(15deg)`;
+            lastTapTime = now;
+            const moods = Object.keys(moodDefs);
+            const idx = moods.indexOf(currentMood);
+            applyMood(moods[(idx + 1) % moods.length]);
         });
 
-        // ----- SETTINGS & DASHBOARD -----
-        settingsBtn.addEventListener('click', () => dashboard.classList.toggle('open'));
-        document.addEventListener('click', (e) => {
-            if (!dashboard.contains(e.target) && e.target !== settingsBtn) dashboard.classList.remove('open');
+        // ---- LONG PRESS -> MAD ----
+        robotWrapper.addEventListener('mousedown', (e) => {
+            longPressTimer = setTimeout(() => {
+                if (!isDragging) applyMood('mad');
+            }, 1200);
+        });
+        robotWrapper.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+        robotWrapper.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+        robotWrapper.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                if (!isDragging) applyMood('mad');
+            }, 1200);
+        });
+        robotWrapper.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        robotWrapper.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+        // ---- DOUBLE CLICK LOCK ----
+        robotWrapper.addEventListener('dblclick', (e) => {
+            isLocked = !isLocked;
+            robotWrapper.classList.toggle('locked', isLocked);
+            showToast(isLocked ? '🔒 Locked' : '🔓 Unlocked');
         });
 
-        colorPicker.addEventListener('input', (e) => updateTheme(e.target.value));
-        applyQueueBtn.addEventListener('click', () => {
-            const newQueue = queueInput.value.split(',').map(s => s.trim()).filter(s => moodDefs[s]);
-            if (newQueue.length) {
-                moodQueue = newQueue;
-                localStorage.setItem('moodQueue', JSON.stringify(moodQueue));
-                currentIdx = 0;
-                applyMood(moodQueue[0]);
-                resetAutoCycle();
-                showToast('Queue Updated');
+        // ---- PET ANTENNA ----
+        document.querySelector('.antenna').addEventListener('click', (e) => {
+            e.stopPropagation();
+            applyMood('purring');
+            setTimeout(() => applyMood('smile'), 2000);
+            accessories.hat = !accessories.hat;
+            hatEl.style.display = accessories.hat ? 'block' : 'none';
+        });
+
+        // ---- TICKLE LEFT EAR ----
+        document.querySelector('.ear.left').addEventListener('click', (e) => {
+            e.stopPropagation();
+            applyMood('wink');
+            showToast('Hehe!');
+        });
+
+        // ---- RIGHT EAR GLASSES ----
+        document.querySelector('.ear.right').addEventListener('click', (e) => {
+            e.stopPropagation();
+            accessories.glasses = !accessories.glasses;
+            glassesEl.style.display = accessories.glasses ? 'block' : 'none';
+        });
+
+        // ---- SHAKE DETECTION ----
+        let lastShake = 0;
+        window.addEventListener('devicemotion', (e) => {
+            const acc = e.accelerationIncludingGravity;
+            if (!acc) return;
+            const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+            if (mag > 25 && Date.now() - lastShake > 2000) {
+                lastShake = Date.now();
+                applyMood('dizzy');
+                showToast('WHOA!');
+                if (vibrationEnabled && navigator.vibrate) navigator.vibrate([100,50,100]);
             }
         });
 
-        savePhraseBtn.addEventListener('click', () => {
-            const currentMood = moodQueue[currentIdx];
-            const phrase = phraseInput.value.trim();
-            if (phrase) {
-                customPhrases[currentMood] = phrase;
-                localStorage.setItem('customPhrases', JSON.stringify(customPhrases));
-                applyMood(currentMood);
-                showToast('Phrase saved');
+        // ---- KEYBOARD SHORTCUTS ----
+        document.addEventListener('keydown', (e) => {
+            const moods = Object.keys(moodDefs);
+            const idx = moods.indexOf(currentMood);
+            if (e.key === 'ArrowRight') applyMood(moods[(idx+1)%moods.length]);
+            else if (e.key === 'ArrowLeft') applyMood(moods[(idx-1+moods.length)%moods.length]);
+            else if (e.key === ' ') { e.preventDefault(); applyMood(moods[Math.floor(Math.random()*moods.length)]); }
+            // Konami
+            window.konami = window.konami || [];
+            window.konami.push(e.key);
+            if (window.konami.length > 8) window.konami.shift();
+            if (JSON.stringify(window.konami) === JSON.stringify(['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'])) {
+                applyMood('glitch');
+                document.body.style.background = 'linear-gradient(45deg, #ff007f, #ffe06b, #50e890)';
+                setTimeout(() => document.body.style.background = '', 3000);
+            }
+            // Self destruct
+            if (e.key === 'Backspace' && e.ctrlKey) {
+                let count = 5;
+                showToast(`Self destruct in ${count}...`);
+                const timer = setInterval(() => {
+                    count--;
+                    if (count === 0) {
+                        clearInterval(timer);
+                        applyMood('asleep');
+                        robotWrapper.style.transform = 'scale(0)';
+                        setTimeout(() => { robotWrapper.style.transform = 'scale(1)'; robotWrapper.style.animation = ''; }, 2000);
+                    } else {
+                        showToast(`Self destruct in ${count}...`);
+                    }
+                }, 1000);
             }
         });
 
-        // Playlist management
-        const playlists = JSON.parse(localStorage.getItem('playlists') || '{}');
-        function updatePlaylistSelect() {
-            playlistSelect.innerHTML = '<option value="">Select playlist...</option>';
-            Object.keys(playlists).forEach(name => {
-                const opt = document.createElement('option'); opt.value = name; opt.textContent = name; playlistSelect.appendChild(opt);
-            });
-        }
-        savePlaylistBtn.addEventListener('click', () => {
-            const name = prompt('Playlist name:'); if (name) { playlists[name] = [...moodQueue]; localStorage.setItem('playlists', JSON.stringify(playlists)); updatePlaylistSelect(); }
-        });
-        loadPlaylistBtn.addEventListener('click', () => {
-            const name = playlistSelect.value; if (name && playlists[name]) { moodQueue = playlists[name]; localStorage.setItem('moodQueue', JSON.stringify(moodQueue)); currentIdx = 0; applyMood(moodQueue[0]); resetAutoCycle(); }
+        // ---- EYE TRACKING (simplified, no parallax to avoid conflicts) ----
+        document.addEventListener('mousemove', (e) => {
+            const rect = robotWrapper.getBoundingClientRect();
+            const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
+            const dx = (e.clientX - centerX) / (rect.width/2) * 4;
+            const dy = (e.clientY - centerY) / (rect.height/2) * 4;
+            pupils.forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
         });
 
-        exportBtn.addEventListener('click', () => {
-            const blob = new Blob([JSON.stringify({ queue: moodQueue, phrases: customPhrases })], { type: 'application/json' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ronbot-moods.json'; a.click();
-        });
-        importBtn.addEventListener('click', () => importFile.click());
-        importFile.addEventListener('change', (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if (data.queue) { moodQueue = data.queue; localStorage.setItem('moodQueue', JSON.stringify(moodQueue)); }
-                    if (data.phrases) { customPhrases = data.phrases; localStorage.setItem('customPhrases', JSON.stringify(customPhrases)); }
-                    currentIdx = 0; applyMood(moodQueue[0]); resetAutoCycle();
-                } catch (ex) { alert('Invalid file'); }
-            };
-            reader.readAsText(file);
-        });
-
-        // Toggles
-        darkToggle.addEventListener('click', () => { document.body.classList.toggle('dark'); darkToggle.classList.toggle('active'); });
-        soundToggle.addEventListener('click', () => {
+        // ---- TOGGLES ----
+        document.getElementById('soundToggle').addEventListener('click', function() {
             soundEnabled = !soundEnabled;
-            soundToggle.classList.toggle('active', soundEnabled);
-            soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+            this.classList.toggle('active', soundEnabled);
+            this.textContent = soundEnabled ? '🔊' : '🔇';
+        });
+        document.getElementById('darkToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark');
+            this.classList.toggle('active');
+        });
+        document.getElementById('vibrateToggle').addEventListener('click', function() {
+            vibrationEnabled = !vibrationEnabled;
+            this.classList.toggle('active', vibrationEnabled);
+            this.textContent = vibrationEnabled ? '📳' : '📴';
         });
 
-        // INIT
-        updatePlaylistSelect();
-        updateTheme(moodDefs[moodQueue[currentIdx]]?.color || '#ff007f');
-        applyMood(moodQueue[currentIdx]);
-        resetAutoCycle();
+        // Init
+        applyMood('smile');
     })();
 </script>
 </body>
