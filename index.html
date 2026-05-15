@@ -1,475 +1,475 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
-    <title>RonBot · Stress Release App</title>
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22RonBot%22%2C%22short_name%22%3A%22RonBot%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23030a0c%22%2C%22theme_color%22%3A%22%2300e0fc%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAABwElEQVR42u2XPUvDUBSAb25IoUOb0k2g4r9wcu7i4uLi4uLiP3B0dXFxd3VycnVy9h8IKmhbaJO2SZt8Pc9jbvLlJk1vQk%2FuxbnnnnPvuffcmyb5Bw9SSQUjPAWMsH8hYIAnwAAHfho6wAIfAQsM%2FHZwICywwAIL%2FLbABywxwBIDLDHATcCu8AMsPsAcPNzBzR9ZfIBlt%2FB9PCniACw%2BwOIDDDCk%2Fx%2BwxAMsMcASEyxlgKEN%2FwGLB1higMWHaeHPAgwwDGDB5wAGGh8mWfCAiw%2Bw%2BEDjxWB4wOIDLD7ATmAoBn4ArHwfYPGBpgm4mQAWCOBOAAtcAODOBLDAAAcY4C4BHngAFuABWIAN4GcA2LuAA%2FcOwI0AHnAAh1B8KN8MB4lNA%2FBpEXD4LggWH2CJAR6b%2FAABhlF8OADAwAQA9u4CLN4DjS9YNMAyL8BKG4Ape9B4v1xguS8YN%2B4H5gCYPAeWC7AGAxtObOBXaoDBN2ADDq3PAFPLn%2F%2FgOA8mH4AHmPYkmF%2FCsbJMoDmQJmXgMQaYysyKbQDLnHQMMoDLDDBWgB0rA43PAd5Y8AMMPsDiAywxwK2PkhMfYP1BPNcAAAAASUVORK5CYII%3D%22%2C%22sizes%22%3A%2248x48%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
-    <style>
-        :root {
-            --mood: #00e0fc;
-            --glow: rgba(0, 224, 252, 0.7);
-            --bg: #030a0c;
-            --screen: #030a0c;
-            --casing-top: #e8e8e8;
-            --casing-bottom: #b0b0b0;
-            --particle: #00e0fc;
-        }
-        body.dark { --bg: #030a0c; --casing-top: #2a2a2a; --casing-bottom: #111; }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: system-ui, sans-serif; background: var(--bg);
-            height:100vh; display:flex; align-items:center; justify-content:center;
-            overflow:hidden; user-select:none; touch-action:manipulation;
-            position:fixed; inset:0; -webkit-tap-highlight-color:transparent;
-            transition: background 0.5s;
-        }
-        .bg-grid {
-            position:fixed; inset:0; z-index:0; pointer-events:none;
-            background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        .boot-screen {
-            position:fixed; inset:0; z-index:9999; background:#000;
-            display:flex; align-items:center; justify-content:center;
-            color:#00e0fc; font-size:2rem; font-weight:bold; letter-spacing:4px;
-            animation: bootFade 2s forwards; pointer-events:none;
-        }
-        @keyframes bootFade { 0%{opacity:1;} 80%{opacity:1;} 100%{opacity:0;} }
-        .flash-overlay {
-            position:fixed; inset:0; z-index:999; pointer-events:none;
-            background: rgba(255,255,255,0.9); opacity:0; transition: opacity 0.1s;
-        }
-        .flash-overlay.active { opacity:1; }
-        .bolt {
-            position:fixed; z-index:1000; pointer-events:none;
-            background: #fff; height: 3px; opacity:0;
-            box-shadow: 0 0 15px #4af0ff, 0 0 30px #00e5ff;
-            transform-origin: left center; animation: bolt-strike 0.5s ease-out forwards;
-        }
-        @keyframes bolt-strike { 0%{opacity:0;width:0;} 20%{opacity:1;width:var(--w);} 80%{opacity:1;} 100%{opacity:0;} }
-        @keyframes particle-fly { 0%{opacity:1;transform:translate(0,0) scale(1);} 100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0);} }
-
-        .robot-wrapper {
-            position:fixed; width:min(220px,45vmin); height:min(220px,45vmin);
-            cursor:pointer; z-index:10; filter:drop-shadow(0 0 15px var(--glow));
-            left:50%; top:50%; transform:translate(-50%,-50%);
-            -webkit-tap-highlight-color:transparent;
-        }
-        .antenna {
-            position:absolute; top:-34px; left:50%; transform:translateX(-50%);
-            width:6px; height:36px; background:#4a5a6a; border-radius:4px 4px 0 0; z-index:6;
-        }
-        .antenna::after {
-            content:''; position:absolute; top:-12px; left:50%; transform:translateX(-50%);
-            width:16px; height:16px; background:var(--mood); border-radius:50%;
-            box-shadow:0 0 18px var(--mood), 0 0 35px var(--glow);
-            animation: antenna-pulse 2s infinite;
-        }
-        @keyframes antenna-pulse { 0%,100%{opacity:0.7; transform:translateX(-50%) scale(1);} 50%{opacity:1; transform:translateX(-50%) scale(1.25);} }
-        .ear {
-            position:absolute; top:50%; transform:translateY(-50%);
-            width:14px; height:45%; background:#3a4a5a; border-radius:7px; z-index:-1;
-        }
-        .ear.left { left:-8px; } .ear.right { right:-8px; }
-        .head-casing {
-            width:100%; height:100%;
-            background:linear-gradient(180deg, var(--casing-top) 0%, var(--casing-bottom) 100%);
-            border:6px solid #333; border-radius:28px;
-            display:flex; justify-content:center; align-items:center;
-            box-shadow:0 12px 30px rgba(0,0,0,0.25), 0 0 20px var(--glow);
-            padding:8px; box-sizing:border-box; transition: transform 0.15s ease-out;
-        }
-        body.dark .head-casing { border-color:#555; }
-        .head-casing.hit-light { animation: hit-shake-light 0.25s ease-out; }
-        .head-casing.hit-medium { animation: hit-shake-medium 0.35s ease-out; }
-        .head-casing.hit-heavy { animation: hit-shake-heavy 0.45s ease-out; }
-        .head-casing.hit-extreme { animation: hit-shake-extreme 0.5s ease-out; }
-        .head-casing.destroy-shake { animation: destroy-shake 0.6s ease-in-out; }
-        .head-casing.breathing { animation: breathe 4s ease-in-out infinite; }
-
-        @keyframes hit-shake-light { 0%{transform:translate(0,0);} 20%{transform:translate(-3px,1px);} 40%{transform:translate(3px,-1px);} 100%{transform:translate(0,0);} }
-        @keyframes hit-shake-medium { 0%{transform:translate(0,0);} 15%{transform:translate(-6px,2px);} 30%{transform:translate(6px,-2px);} 45%{transform:translate(-4px,1px);} 60%{transform:translate(4px,-1px);} 100%{transform:translate(0,0);} }
-        @keyframes hit-shake-heavy { 0%{transform:translate(0,0);} 15%{transform:translate(-10px,3px);} 30%{transform:translate(10px,-3px);} 45%{transform:translate(-7px,2px);} 60%{transform:translate(7px,-2px);} 100%{transform:translate(0,0);} }
-        @keyframes hit-shake-extreme { 0%{transform:translate(0,0) rotate(0);} 15%{transform:translate(-14px,4px) rotate(-5deg);} 30%{transform:translate(14px,-4px) rotate(5deg);} 45%{transform:translate(-10px,3px) rotate(-3deg);} 60%{transform:translate(10px,-3px) rotate(3deg);} 100%{transform:translate(0,0) rotate(0);} }
-        @keyframes destroy-shake { 0%{transform:translate(0,0) rotate(0);} 10%{transform:translate(-20px,5px) rotate(-8deg);} 20%{transform:translate(20px,-5px) rotate(8deg);} 30%{transform:translate(-15px,4px) rotate(-6deg);} 40%{transform:translate(15px,-4px) rotate(6deg);} 50%{transform:translate(-10px,3px) rotate(-4deg);} 60%{transform:translate(10px,-3px) rotate(4deg);} 70%{transform:translate(-5px,2px) rotate(-2deg);} 80%{transform:translate(5px,-2px) rotate(2deg);} 90%{transform:translate(-2px,1px) rotate(0);} 100%{transform:translate(0,0) rotate(0);} }
-        @keyframes breathe { 0%{transform:scale(1) translateY(0);} 50%{transform:scale(1.02) translateY(-3px);} 100%{transform:scale(1) translateY(0);} }
-
-        .face-screen {
-            width:100%; height:100%; background-color:var(--screen); border-radius:22px; position:relative;
-            box-shadow: inset 0px 0px 30px rgba(0,0,0,1), inset -5px -7px 7px -2px rgba(255,255,255,0.25);
-            display:flex; justify-content:center; align-items:center; overflow:hidden;
-        }
-        .face-screen::after {
-            content:""; position:absolute; top:0;left:0;right:0;bottom:0;
-            background: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 50%),
-                        linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02));
-            background-size: 100% 3px, 3px 100%; z-index:10; pointer-events:none;
-            animation: flicker 0.15s infinite;
-        }
-        @keyframes flicker { 0%{opacity:0.92;} 50%{opacity:0.82;} 100%{opacity:0.92;} }
-
-        .face { display:flex; flex-direction:column; align-items:center; z-index:5;
-            filter:drop-shadow(0 0 6px var(--mood)) drop-shadow(0 0 16px rgba(0,224,252,0.35));
-            transition: filter 0.3s;
-        }
-        .eyes { display:flex; gap:30px; }
-        .eye { width:28px; height:28px; background:var(--mood); border-radius:50%; transition:all 0.3s; }
-        .mouth-container { margin-top:14px; }
-        .mouth-path { fill:none; stroke:var(--mood); stroke-width:5; stroke-linecap:round; transition:all 0.3s; }
-
-        .face.smile .eye { border-radius:50% 50% 20% 20%; height:24px; background:#50e890; }
-        .face.smile .mouth-path { stroke:#50e890; }
-        .face.bored .eye { height:7px; opacity:0.6; transform:translateY(5px); }
-        .face.confused .eye { background:transparent; border:2px solid #88ccdd; box-shadow:0 0 6px rgba(136,204,221,0.6); }
-        .face.confused .eye::after { content:''; position:absolute; width:5px; height:5px; background:#88ccdd; border-radius:50%; top:5px; left:5px; }
-        .face.confused .mouth-path { stroke:#88ccdd; }
-        .face.mad .eye { transform:rotate(15deg); background:#ff5e7a; }
-        .face.mad .eye:last-child { transform:rotate(-15deg); }
-        .face.mad .mouth-path { stroke:#ff5e7a; }
-        .face.glitch .eye { animation:glitch-eyes 0.12s infinite; background:#ff5e7a; }
-        .face.glitch .mouth-path { stroke:#ff5e7a; }
-        @keyframes glitch-eyes { 0%{transform:translate(0);} 50%{transform:translate(3px,-1px);} 100%{transform:translate(-2px,2px);} }
-        .face.dizzy .eye { width:10px; height:14px; border-radius:50%; animation:spin-eye 0.25s infinite; background:#ffe06b; }
-        .face.dizzy .mouth-path { stroke:#ffe06b; }
-        @keyframes spin-eye { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
-
-        .speech-bubble {
-            position:absolute; top:-60px; left:50%; transform:translateX(-50%);
-            background:#fff; color:#222; padding:8px 16px; border-radius:20px;
-            font-size:0.8rem; font-weight:700; white-space:nowrap;
-            opacity:0; transition:opacity 0.2s; z-index:50; border:2px solid #333;
-            font-family:'Comic Sans MS', cursive, sans-serif;
-            pointer-events:none;
-        }
-        .speech-bubble.show { opacity:1; }
-
-        .stress-meter {
-            position:fixed; top:20px; left:50%; transform:translateX(-50%);
-            background:rgba(0,0,0,0.6); color:#fff; padding:8px 16px; border-radius:20px;
-            font-weight:bold; font-size:0.85rem; z-index:200; opacity:0; transition:0.3s;
-            border:1px solid var(--mood); display:flex; align-items:center; gap:8px;
-            white-space:nowrap;
-        }
-        .stress-meter.show { opacity:1; }
-        .stress-bar { width:60px; height:8px; background:#333; border-radius:4px; overflow:hidden; }
-        .stress-fill { height:100%; background:var(--mood); transition: width 0.2s; border-radius:4px; }
-
-        .toast {
-            position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
-            background:#00e0fc; color:#030a0c; padding:10px 24px; border-radius:30px;
-            font-weight:bold; z-index:200; opacity:0; transition:0.3s; pointer-events:none;
-        }
-        .toast.show { opacity:1; }
-
-        .dest-counter {
-            position:fixed; top:70px; left:50%; transform:translateX(-50%);
-            background:rgba(0,0,0,0.7); color:#fff; padding:4px 14px; border-radius:14px;
-            font-size:0.75rem; z-index:200; opacity:0; transition:0.3s; border:1px solid var(--mood);
-        }
-        .dest-counter.show { opacity:1; }
-
-        .toggle-btn {
-            position:fixed; top:20px; right:16px;
-            width:44px; height:44px; border-radius:50%;
-            background:rgba(255,255,255,0.1); backdrop-filter:blur(8px);
-            border:1px solid rgba(255,255,255,0.2); cursor:pointer;
-            font-size:1.2rem; display:flex; justify-content:center; align-items:center; color:#eee; z-index:100;
-        }
-
-        /* auto-tap indicator */
-        .auto-tap-hint {
-            position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-            color:white; font-size:0.7rem; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:12px;
-            z-index:150; opacity:0; transition:0.3s; pointer-events:none;
-        }
-        .auto-tap-hint.show { opacity:1; }
-
-        @media (max-width:400px) {
-            .robot-wrapper { width:190px; height:190px; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏸 Live Badminton Slot Booking</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: #f0f4f8; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { max-width: 700px; width: 100%; }
+    h1 { text-align: center; color: #1e3c72; margin-bottom: 0.3em; }
+    .subtitle { text-align: center; color: #555; margin-bottom: 1.5em; }
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 4px; }
+    .form-group.full { grid-column: span 2; }
+    label { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; color: #333; }
+    input, textarea, select { padding: 10px 12px; border: 1px solid #dce1e8; border-radius: 8px; font-size: 0.95rem; background: #fafbfc; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #1e88e5; box-shadow: 0 0 0 3px rgba(30,136,229,0.15); }
+    button { background: #1e88e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
+    button:hover { background: #1565c0; }
+    button.secondary { background: #e9eef2; color: #1e3c72; }
+    button.secondary:hover { background: #dce4ec; }
+    button.danger { background: #ef5350; }
+    button.danger:hover { background: #d32f2f; }
+    .players-section { margin: 20px 0 10px; }
+    .player-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 10px; }
+    .player-row .num { font-weight: 700; width: 28px; color: #1e3c72; }
+    .player-row input { flex: 1; }
+    .player-row .paid-btn { background: none; border: 2px solid #dce1e8; border-radius: 8px; padding: 6px 12px; font-weight: bold; font-size: 1rem; cursor: pointer; background: white; transition: 0.2s; color: #666; min-width: 44px; }
+    .player-row .paid-btn.paid { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+    .player-row .remove-btn { background: none; border: none; color: #999; font-size: 1.2rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .player-row .remove-btn:hover { background: #fee2e2; color: #d32f2f; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+    .preview-box { background: #f1f5f9; border-radius: 12px; padding: 20px; border: 1px dashed #94a3b8; margin-top: 10px; }
+    .preview-box pre { white-space: pre-wrap; font-family: monospace; font-size: 0.95rem; line-height: 1.6; color: #1e293b; margin: 0; }
+    .admin-panel { background: #fff8e1; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 2px solid #ffc107; }
+    .hidden { display: none; }
+    #qrPreviewContainer img { max-width: 200px; border-radius: 8px; border: 1px solid #ccc; }
+  </style>
 </head>
-<body class="dark">
-    <div class="boot-screen" id="bootScreen">HELLO</div>
-    <div class="bg-grid"></div>
-    <div class="flash-overlay" id="flashOverlay"></div>
-    <div class="stress-meter" id="stressMeter">
-        STRESS <div class="stress-bar"><div class="stress-fill" id="stressFill" style="width:0%"></div></div>
-        <span id="stressCount">0/15</span>
-    </div>
-    <div class="dest-counter" id="destCounter">💥 0</div>
-    <div class="toast" id="toast"></div>
-    <div class="auto-tap-hint" id="autoTapHint">Hold for rapid tap</div>
-    <button class="toggle-btn" id="infoToggle" title="Time / Location / Weather">ℹ️</button>
+<body>
+<div class="container">
+  <h1>🏸 Live Badminton Slot Booking</h1>
+  <p class="subtitle">Real‑time shared booking – add your name!</p>
 
-    <div class="robot-wrapper" id="robotWrapper">
-        <div class="speech-bubble" id="speechBubble"></div>
-        <div class="antenna"></div>
-        <div class="ear left"></div>
-        <div class="ear right"></div>
-        <div class="head-casing" id="headCasing">
-            <div class="face-screen">
-                <div class="face" id="face">
-                    <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
-                    <div class="mouth-container">
-                        <svg width="80" height="36" viewBox="0 0 80 36"><path class="mouth-path" id="mouthPath" d="M 10 12 Q 40 36 70 12"/></svg>
-                    </div>
-                </div>
-            </div>
+  <!-- Admin login / panel -->
+  <div class="card hidden" id="adminLoginCard">
+    <h3>🔐 Admin Login</h3>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="adminPasswordInput" placeholder="Enter admin password">
+    </div>
+    <button id="adminLoginBtn">Login</button>
+    <button id="adminLogoutBtn" class="secondary hidden">Logout</button>
+  </div>
+
+  <!-- Main form (only visible when booking loaded) -->
+  <div class="card hidden" id="mainCard">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>📆 Date</label>
+        <input type="date" id="dateInput" disabled>
+      </div>
+      <div class="form-group">
+        <label>Day (auto)</label>
+        <input type="text" id="dayInput" placeholder="Auto-filled" readonly>
+      </div>
+      <div class="form-group">
+        <label>⏰ Start Time</label>
+        <input type="time" id="startTime" disabled>
+      </div>
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="time" id="endTime" disabled>
+      </div>
+      <div class="form-group full">
+        <label>🏟️ Venue</label>
+        <input type="text" id="venue" value="Forum Sba, Setia Alam" disabled>
+      </div>
+      <div class="form-group full">
+        <label>Court Details</label>
+        <input type="text" id="court" disabled>
+      </div>
+      <div class="form-group">
+        <label>💵 Price (RM)</label>
+        <input type="number" id="price" step="0.5" min="0" disabled>
+      </div>
+      <div class="form-group">
+        <label>🏸 Shuttle</label>
+        <input type="text" id="shuttle" disabled>
+      </div>
+      <div class="form-group full">
+        <label>👤 Host</label>
+        <input type="text" id="host" disabled>
+      </div>
+      <!-- QR (admin only) -->
+      <div class="form-group full hidden" id="qrSection">
+        <label>💳 QR Label</label>
+        <input type="text" id="qrLabel" disabled>
+      </div>
+      <div class="form-group full hidden" id="qrImageSection">
+        <label>📷 QR Image</label>
+        <input type="file" id="qrImageInput" accept="image/*" style="display:none;" disabled>
+        <button type="button" id="qrImageBtn" class="secondary" disabled>🖼️ Choose QR</button>
+        <button type="button" id="qrRemoveBtn" class="danger" style="display:none;" disabled>🗑️ Remove QR</button>
+        <div id="qrPreviewContainer" style="margin-top:10px; display:none;">
+          <img id="qrPreviewImg" alt="QR Payment">
         </div>
+      </div>
     </div>
 
-    <script>
-        (() => {
-            const moods = {
-                smile:    { c:'#50e890', e:'😊', p:'Happy!', m:'M10 12 Q40 36 70 12' },
-                bored:    { c:'#88ccdd', e:'😑', p:'Meh.', m:'M15 18 L65 18' },
-                confused: { c:'#88ccdd', e:'😵', p:'Huh?', m:'M15 14 Q25 6 35 14 T55 14 T65 14' },
-                mad:      { c:'#ff5e7a', e:'😠', p:'Grrr!', m:'M10 28 Q40 4 70 28' },
-                glitch:   { c:'#ff5e7a', e:'⚠️', p:'ERROR!', m:'M15 14 L30 22 L20 22 L40 14 L35 22 L55 14' },
-                dizzy:    { c:'#ffe06b', e:'🥴', p:'Whoa!', m:'M15 12 Q25 4 35 12 Q45 20 55 12 Q65 4 70 12' }
-            };
-            const encouraging = ["You've got this!", "Reset together", "Let it go...", "Nice release!", "Feeling better?"];
-            let cur='smile', sound=false, vibrate=true, stressLevel=0, destroyed=false, audioCtx;
-            let destroyThreshold = 15;
-            let totalDestroys = parseInt(localStorage.getItem('ronbot-destroys')) || 0;
-            let isHolding = false, holdInterval, decayTimer;
-            let wakeLock = null;
+    <!-- Player slots (players can add themselves here) -->
+    <div class="players-section">
+      <label style="font-weight:600;">👥 Players (click on an open slot to add your name)</label>
+      <div id="playersContainer"></div>
+      <!-- "Add Slot" button only for admin -->
+      <button class="secondary hidden" id="addPlayerBtn" style="margin-top:8px;">+ Add Player Slot (Admin)</button>
+    </div>
 
-            const face=document.getElementById('face'), mouth=document.getElementById('mouthPath'),
-                  bubble=document.getElementById('speechBubble'), wrapper=document.getElementById('robotWrapper'),
-                  toast=document.getElementById('toast'), headCasing=document.getElementById('headCasing'),
-                  flashOverlay=document.getElementById('flashOverlay'),
-                  stressMeter=document.getElementById('stressMeter'), stressFill=document.getElementById('stressFill'),
-                  stressCount=document.getElementById('stressCount'),
-                  destCounter=document.getElementById('destCounter'),
-                  autoTapHint=document.getElementById('autoTapHint');
+    <div class="actions">
+      <button id="copyBtn" class="secondary">📋 Copy Announcement</button>
+    </div>
 
-            // PWA service worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent('self.addEventListener("fetch",e=>e.respondWith(fetch(e.request)))'));
-                });
-            }
+    <div>
+      <label style="font-weight:600;">📄 Announcement Preview:</label>
+      <div class="preview-box" id="preview"></div>
+    </div>
+  </div>
+</div>
 
-            // Wake lock
-            async function requestWakeLock() { try { wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
-            requestWakeLock();
-            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock(); });
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-            setTimeout(()=>{ document.getElementById('bootScreen').style.display='none'; setMood('smile',true); },2000);
+  // 🔥 Your Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjP-ZKJdvM7FF_C9tsqf_UytY-A4lIWGE",
+    authDomain: "badminton-booking-f9f0a.firebaseapp.com",
+    databaseURL: "https://badminton-booking-f9f0a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "badminton-booking-f9f0a",
+    storageBucket: "badminton-booking-f9f0a.firebasestorage.app",
+    messagingSenderId: "189775108709",
+    appId: "1:189775108709:web:9813bd79c1550df3cec48c",
+    measurementId: "G-NSMY5B1F17" // Not used in this app, but harmless
+  };
 
-            function setMood(m, showBubble=false){
-                if(destroyed && m!=='rebooting') return;
-                const d = moods[m] || {c:'#00e0fc',e:'🔄',p:'Rebooting...',m:'M28 14 a6 6 0 1 1 0 12'};
-                document.documentElement.style.setProperty('--mood', d.c);
-                document.documentElement.style.setProperty('--glow', `rgba(${hexRgb(d.c)},0.7)`);
-                document.documentElement.style.setProperty('--particle', d.c);
-                face.className='face '+m; mouth.setAttribute('d', d.m); cur=m;
-                if(showBubble){ bubble.textContent=`${d.e} ${d.p}`; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),1500); }
-            }
-            function hexRgb(h){ return `${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)}`; }
-            function showToast(msg, duration=2000){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), duration); }
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-            function playHitSound(level){
-                if(!audioCtx) audioCtx=new AudioContext();
-                const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-                o.type='square'; o.frequency.value=Math.max(60, 200 - level*2);
-                g.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.12);
-                o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.12);
-            }
-            function playDestructionSound(){ if(!audioCtx||!sound) return; for(let i=0;i<8;i++){ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='sawtooth'; o.frequency.value=100+Math.random()*200; g.gain.setValueAtTime(0.06,audioCtx.currentTime+i*0.05); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+i*0.05+0.1); o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime+i*0.05); o.stop(audioCtx.currentTime+i*0.05+0.1); } }
+  // Admin password – CHANGE THIS to your own secret password
+  const ADMIN_PASSWORD = "badminton123";
+  let isAdmin = false;
 
-            function updateStressUI(){
-                const pct = Math.min(100, (stressLevel / destroyThreshold) * 100);
-                stressFill.style.width = pct+'%';
-                stressCount.textContent = `${stressLevel}/${destroyThreshold}`;
-                stressMeter.classList.add('show');
-                destCounter.textContent = `💥 ${totalDestroys}`;
-                destCounter.classList.add('show');
-                setTimeout(()=>destCounter.classList.remove('show'),3000);
-            }
+  // DOM references
+  const adminLoginCard = document.getElementById('adminLoginCard');
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+  const mainCard = document.getElementById('mainCard');
+  const dateInput = document.getElementById('dateInput');
+  const dayInput = document.getElementById('dayInput');
+  const startTime = document.getElementById('startTime');
+  const endTime = document.getElementById('endTime');
+  const venue = document.getElementById('venue');
+  const court = document.getElementById('court');
+  const price = document.getElementById('price');
+  const shuttle = document.getElementById('shuttle');
+  const host = document.getElementById('host');
+  const qrLabel = document.getElementById('qrLabel');
+  const qrSection = document.getElementById('qrSection');
+  const qrImageSection = document.getElementById('qrImageSection');
+  const qrImageInput = document.getElementById('qrImageInput');
+  const qrImageBtn = document.getElementById('qrImageBtn');
+  const qrRemoveBtn = document.getElementById('qrRemoveBtn');
+  const qrPreviewContainer = document.getElementById('qrPreviewContainer');
+  const qrPreviewImg = document.getElementById('qrPreviewImg');
+  const playersContainer = document.getElementById('playersContainer');
+  const addPlayerBtn = document.getElementById('addPlayerBtn');
+  const previewDiv = document.getElementById('preview');
+  const copyBtn = document.getElementById('copyBtn');
 
-            function applyHitFeedback(){
-                const fraction = stressLevel / destroyThreshold;
-                headCasing.classList.remove('hit-light','hit-medium','hit-heavy','hit-extreme');
-                void headCasing.offsetWidth;
-                if(fraction <= 0.2) headCasing.classList.add('hit-light');
-                else if(fraction <= 0.4) headCasing.classList.add('hit-medium');
-                else if(fraction <= 0.6) headCasing.classList.add('hit-heavy');
-                else headCasing.classList.add('hit-extreme');
-                if(vibrate && navigator.vibrate) navigator.vibrate(15);
-                if(sound) playHitSound(stressLevel);
-            }
+  const bookingRef = ref(db, 'bookings/current');
+  let currentData = null;
 
-            function getMoodByFraction(fraction){
-                if(fraction <= 0) return 'smile';
-                if(fraction <= 0.2) return 'bored';
-                if(fraction <= 0.4) return 'confused';
-                if(fraction <= 0.6) return 'mad';
-                if(fraction <= 0.8) return 'glitch';
-                return 'dizzy';
-            }
+  // ---------- Helpers ----------
+  function format12Hour(time24) {
+    if (!time24) return "";
+    const [h, m] = time24.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return "";
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    let hour12 = h % 12;
+    if (hour12 === 0) hour12 = 12;
+    return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  }
 
-            function spawnParticles(color, count=10){
-                for(let i=0;i<count;i++){
-                    const p=document.createElement('div');
-                    p.style.cssText=`position:absolute;width:6px;height:6px;background:${color};border-radius:50%;left:50%;top:50%;pointer-events:none;z-index:999;animation:particle-fly 0.7s ease-out forwards;`;
-                    p.style.setProperty('--dx',(Math.random()-0.5)*120+'px');
-                    p.style.setProperty('--dy',(Math.random()-0.5)*120+'px');
-                    document.body.appendChild(p); setTimeout(()=>p.remove(),700);
-                }
-            }
+  function formatDateDMY(dateStr) {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split('-');
+    return `${parseInt(day)}/${parseInt(month)}/${year}`;
+  }
 
-            function decayStress(){
-                clearTimeout(decayTimer);
-                decayTimer = setInterval(()=>{
-                    if(stressLevel>0 && !destroyed && !isHolding){
-                        stressLevel = Math.max(0, stressLevel-1);
-                        updateStressUI();
-                        setMood(getMoodByFraction(stressLevel/destroyThreshold));
-                        if(stressLevel===0) stressMeter.classList.remove('show');
-                    }
-                }, 1300);
-            }
+  function getDayFromDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr + "T00:00:00");
+    const days = ["AHAD", "ISNIN", "SELASA", "RABU", "KHAMIS", "JUMAAT", "SABTU"];
+    return days[d.getDay()];
+  }
 
-            function triggerDestruction(){
-                destroyed=true;
-                headCasing.classList.add('destroy-shake');
-                flashOverlay.classList.add('active');
-                setTimeout(()=>flashOverlay.classList.remove('active'),200);
-                for(let i=0;i<8;i++){
-                    const b=document.createElement('div'); b.className='bolt';
-                    b.style.left=Math.random()*80+10+'%'; b.style.top=Math.random()*80+10+'%';
-                    b.style.setProperty('--w',(Math.random()*100+50)+'px');
-                    b.style.transform=`rotate(${Math.random()*360}deg)`;
-                    document.body.appendChild(b); setTimeout(()=>b.remove(),500);
-                }
-                spawnParticles('#ff5e7a',25);
-                if(vibrate&&navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
-                playDestructionSound();
-                wrapper.style.transition='transform 0.5s ease-in, opacity 0.5s';
-                wrapper.style.transform='translate(-50%,-50%) scale(0.08) rotate(25deg)'; wrapper.style.opacity='0';
-                totalDestroys++;
-                localStorage.setItem('ronbot-destroys', totalDestroys);
-                showToast(`💥 STRESS RELEASED! (next in ${destroyThreshold+10} hits)`, 2500);
-                stressMeter.classList.remove('show');
+  // ---------- Admin login / logout ----------
+  adminLoginBtn.addEventListener('click', () => {
+    if (adminPasswordInput.value === ADMIN_PASSWORD) {
+      isAdmin = true;
+      adminLoginBtn.classList.add('hidden');
+      adminLogoutBtn.classList.remove('hidden');
+      adminPasswordInput.value = '';
+      setAdminMode(true);
+    } else {
+      alert("Wrong password!");
+    }
+  });
 
-                setTimeout(()=>{
-                    wrapper.style.transition='transform 0.6s ease-out, opacity 0.4s';
-                    wrapper.style.transform='translate(-50%,-50%) scale(1) rotate(0deg)'; wrapper.style.opacity='1';
-                    headCasing.classList.remove('destroy-shake');
-                    destroyThreshold += 10;
-                    stressLevel = 0;
-                    updateStressUI();
-                    stressCount.textContent = `0/${destroyThreshold}`;
-                    stressMeter.classList.remove('show');
-                    // Deep-breath guide
-                    headCasing.classList.add('breathing');
-                    setMood('rebooting',true);
-                    showToast(encouraging[Math.floor(Math.random()*encouraging.length)], 3000);
-                    setTimeout(()=>{
-                        headCasing.classList.remove('breathing');
-                        destroyed=false;
-                        setMood('smile',true);
-                        updateStressUI();
-                        startFallingFragmentsMiniGame();
-                    }, 2200);
-                }, 1600);
-            }
+  adminLogoutBtn.addEventListener('click', () => {
+    isAdmin = false;
+    adminLoginBtn.classList.remove('hidden');
+    adminLogoutBtn.classList.add('hidden');
+    setAdminMode(false);
+  });
 
-            // Post-destruction mini-game: tap falling fragments
-            function startFallingFragmentsMiniGame(){
-                const fragmentColors = ['#ff5e7a','#ffe06b','#50e890','#4af0ff'];
-                for(let i=0;i<12;i++){
-                    setTimeout(()=>{
-                        const frag = document.createElement('div');
-                        const size = Math.random()*15+10;
-                        frag.style.cssText = `position:fixed;width:${size}px;height:${size}px;background:${fragmentColors[Math.floor(Math.random()*fragmentColors.length)]};border-radius:30%;left:${Math.random()*90}%;top:-20px;z-index:200;pointer-events:auto;cursor:pointer;transition:top 2.5s linear;`;
-                        frag.addEventListener('click', (e)=>{ e.stopPropagation(); frag.style.opacity='0'; spawnParticles(frag.style.backgroundColor,3); setTimeout(()=>frag.remove(),200); });
-                        document.body.appendChild(frag);
-                        setTimeout(()=>{ frag.style.top = '110%'; }, 30);
-                        setTimeout(()=>frag.remove(), 3000);
-                    }, i*80);
-                }
-            }
+  function setAdminMode(enable) {
+    const adminFields = [dateInput, startTime, endTime, venue, court, price, shuttle, host, qrLabel, qrImageBtn, qrRemoveBtn];
+    adminFields.forEach(el => { if (el) el.disabled = !enable; });
+    addPlayerBtn.classList.toggle('hidden', !enable);
+    qrSection.classList.toggle('hidden', !enable);
+    qrImageSection.classList.toggle('hidden', !enable);
+    if (!enable) qrRemoveBtn.style.display = 'none';
+  }
 
-            // Tap handling with hold-to-auto-tap
-            function hitRobot(e){
-                if(destroyed) return;
-                stressLevel = Math.min(destroyThreshold, stressLevel+1);
-                updateStressUI();
-                clearTimeout(decayTimer);
-                decayStress();
-                applyHitFeedback();
-                const fraction = stressLevel / destroyThreshold;
-                setMood(getMoodByFraction(fraction), true);
-                if(stressLevel >= destroyThreshold) triggerDestruction();
-            }
+  // ---------- Render UI from database ----------
+  function renderFromData(data) {
+    if (!data) {
+      mainCard.classList.add('hidden');
+      return;
+    }
+    mainCard.classList.remove('hidden');
+    currentData = data;
 
-            wrapper.addEventListener('pointerdown', (e)=>{
-                e.preventDefault();
-                if(destroyed) return;
-                // Resume audio on first touch
-                if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                isHolding = true;
-                hitRobot(e);
-                autoTapHint.classList.add('show');
-                // Start auto-tap after 300ms of holding
-                holdInterval = setInterval(()=>{
-                    if(isHolding && !destroyed) hitRobot(e);
-                }, 150);
-            });
-            wrapper.addEventListener('pointerup', ()=>{
-                clearInterval(holdInterval);
-                isHolding = false;
-                autoTapHint.classList.remove('show');
-            });
-            wrapper.addEventListener('pointerleave', ()=>{
-                clearInterval(holdInterval);
-                isHolding = false;
-                autoTapHint.classList.remove('show');
-            });
+    dateInput.value = data.date || '';
+    dayInput.value = data.day || '';
+    startTime.value = data.start || '';
+    endTime.value = data.end || '';
+    venue.value = data.venue || '';
+    court.value = data.court || '';
+    price.value = data.price || '';
+    shuttle.value = data.shuttle || '';
+    host.value = data.host || '';
+    qrLabel.value = data.qrLabel || '';
 
-            // Info toggle
-            document.getElementById('infoToggle').addEventListener('click', async ()=>{
-                const now = new Date();
-                bubble.textContent = `🕒 ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} 📅 ${now.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'})}`;
-                bubble.classList.add('show');
-                setTimeout(async ()=>{
-                    if('geolocation' in navigator){
-                        navigator.geolocation.getCurrentPosition(async pos=>{
-                            try{
-                                const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`);
-                                const d=await r.json();
-                                bubble.textContent=`📍 ${pos.coords.latitude.toFixed(1)}° ${pos.coords.longitude.toFixed(1)}° | 🌡️ ${Math.round(d.current_weather.temperature)}°C`;
-                                bubble.classList.add('show');
-                                setTimeout(()=>bubble.classList.remove('show'),4000);
-                            }catch{ bubble.textContent='Weather unavailable'; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),2000); }
-                        },()=>{ bubble.textContent='📍 Location denied'; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),2000); });
-                    }
-                },2500);
-            });
+    if (data.qrDataUrl) {
+      qrPreviewImg.src = data.qrDataUrl;
+      qrPreviewContainer.style.display = 'block';
+      if (isAdmin) qrRemoveBtn.style.display = 'inline-block';
+    } else {
+      qrPreviewImg.src = '';
+      qrPreviewContainer.style.display = 'none';
+      qrRemoveBtn.style.display = 'none';
+    }
 
-            // Sound/vibration toggles
-            document.addEventListener('keydown',(e)=>{
-                if(e.key==='s'&&e.ctrlKey){ e.preventDefault(); sound=!sound; showToast(sound?'Sound ON 🔊':'Sound OFF 🔇'); }
-                if(e.key==='v'&&e.ctrlKey){ e.preventDefault(); vibrate=!vibrate; showToast(vibrate?'Vibration ON 📳':'Vibration OFF 📴'); }
-            });
+    renderPlayers(data.players || []);
+    updatePreview(data);
+  }
 
-            // Device orientation subtle tilt on stress meter (cosmetic)
-            window.addEventListener('deviceorientation', (e)=>{
-                if(e.gamma && stressMeter.classList.contains('show')){
-                    const tilt = e.gamma / 90; // -1 to 1
-                    stressMeter.style.transform = `translateX(-50%) rotate(${tilt*5}deg)`;
-                }
-            });
+  function renderPlayers(players) {
+    playersContainer.innerHTML = '';
+    players.forEach((player, idx) => {
+      const row = document.createElement('div');
+      row.className = 'player-row';
+      const isOccupied = player.name && player.name.trim() !== '';
+      row.innerHTML = `
+        <span class="num">${idx + 1}.</span>
+        ${isOccupied 
+          ? `<span style="flex:1;">${escapeHtml(player.name)}</span>`
+          : `<input type="text" class="player-name" placeholder="Your name" data-index="${idx}" ${isAdmin ? '' : ''}>`
+        }
+        <button class="paid-btn ${player.paid ? 'paid' : ''}" data-index="${idx}" ${!isAdmin && !isOccupied ? 'disabled' : ''}>✅</button>
+        ${isAdmin ? `<button class="remove-btn" data-index="${idx}">✕</button>` : ''}
+      `;
+      if (!isAdmin && !isOccupied) {
+        row.querySelector('.player-name').removeAttribute('readonly');
+      }
+      playersContainer.appendChild(row);
+    });
 
-            updateStressUI();
-            setMood('smile',true);
-        })();
-    </script>
+    document.querySelectorAll('.player-name').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = e.target.dataset.index;
+        const name = e.target.value.trim();
+        if (name && currentData) {
+          const updatedPlayers = [...currentData.players];
+          updatedPlayers[idx] = { ...updatedPlayers[idx], name: name };
+          updateBooking({ players: updatedPlayers });
+        }
+      });
+    });
+
+    document.querySelectorAll('.paid-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = e.target.dataset.index;
+        if (currentData && currentData.players[idx]) {
+          const updatedPlayers = [...currentData.players];
+          updatedPlayers[idx] = { ...updatedPlayers[idx], paid: !updatedPlayers[idx].paid };
+          updateBooking({ players: updatedPlayers });
+        }
+      });
+    });
+
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = e.target.dataset.index;
+        const updatedPlayers = [...currentData.players];
+        updatedPlayers.splice(idx, 1);
+        updateBooking({ players: updatedPlayers });
+      });
+    });
+  }
+
+  addPlayerBtn.addEventListener('click', () => {
+    if (!isAdmin || !currentData) return;
+    const updatedPlayers = [...currentData.players, { name: "", paid: false }];
+    updateBooking({ players: updatedPlayers });
+  });
+
+  // ---------- Admin field listeners ----------
+  function setupAdminFieldListeners() {
+    const fields = [
+      { el: dateInput, key: 'date' },
+      { el: startTime, key: 'start' },
+      { el: endTime, key: 'end' },
+      { el: venue, key: 'venue' },
+      { el: court, key: 'court' },
+      { el: price, key: 'price' },
+      { el: shuttle, key: 'shuttle' },
+      { el: host, key: 'host' },
+      { el: qrLabel, key: 'qrLabel' }
+    ];
+    fields.forEach(({ el, key }) => {
+      el.addEventListener('change', () => {
+        if (isAdmin && currentData) {
+          updateBooking({ [key]: el.value });
+        }
+      });
+    });
+    dateInput.addEventListener('change', () => {
+      dayInput.value = getDayFromDate(dateInput.value);
+      if (isAdmin && currentData) {
+        updateBooking({ date: dateInput.value, day: dayInput.value });
+      }
+    });
+  }
+
+  qrImageBtn.addEventListener('click', () => {
+    if (!isAdmin) return;
+    qrImageInput.click();
+  });
+  qrImageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      qrPreviewImg.src = dataUrl;
+      qrPreviewContainer.style.display = 'block';
+      qrRemoveBtn.style.display = 'inline-block';
+      updateBooking({ qrDataUrl: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  });
+  qrRemoveBtn.addEventListener('click', () => {
+    qrPreviewImg.src = '';
+    qrPreviewContainer.style.display = 'none';
+    qrRemoveBtn.style.display = 'none';
+    updateBooking({ qrDataUrl: null });
+  });
+
+  // ---------- Firebase update ----------
+  function updateBooking(partial) {
+    if (!currentData) return;
+    const updated = { ...currentData, ...partial };
+    set(bookingRef, updated);
+  }
+
+  // ---------- Preview builder ----------
+  function updatePreview(data) {
+    if (!data) return;
+    const dateVal = formatDateDMY(data.date) || ".........";
+    const dayVal = data.day || ".......";
+    const start = format12Hour(data.start) || ".....";
+    const end = format12Hour(data.end) || ".....";
+    const venueVal = data.venue || "................";
+    const courtVal = data.court || "................";
+    const priceVal = data.price || "0";
+    const shuttleVal = data.shuttle || "......";
+    const hostVal = data.host || "......";
+    const qrLabelText = data.qrLabel ? `💳 ${data.qrLabel}\n` : (data.qrDataUrl ? "💳 Scan QR to pay:\n" : "");
+
+    let text = `📆 : ${dateVal} , ${dayVal}\n`;
+    text += `⏰ : ${start} - ${end}\n`;
+    text += `🏟️ : ${venueVal}\n`;
+    text += `        (${courtVal})\n`;
+    text += `💵 : RM${priceVal} Per player\n\n`;
+    text += `🏸: Shuttle: ${shuttleVal}\n\n`;
+    if (qrLabelText) text += qrLabelText + '\n';
+    text += `Done payment sila tick ✅ ‼️\n\n`;
+    text += `Host ${hostVal}\n\n`;
+
+    (data.players || []).forEach((p, i) => {
+      const num = i + 1;
+      const name = p.name || "(Open)";
+      const paidMark = p.paid ? "✅️" : "";
+      text += `${num}. ${name}${paidMark}\n`;
+    });
+
+    previewDiv.innerHTML = `<pre>${text}</pre>`;
+    if (data.qrDataUrl) {
+      const imgDiv = document.createElement('div');
+      imgDiv.style.marginTop = '12px';
+      imgDiv.style.textAlign = 'center';
+      const img = document.createElement('img');
+      img.src = data.qrDataUrl;
+      img.alt = 'QR Payment';
+      img.style.maxWidth = '200px';
+      img.style.borderRadius = '8px';
+      img.style.border = '1px solid #ccc';
+      imgDiv.appendChild(img);
+      previewDiv.appendChild(imgDiv);
+    }
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    const text = previewDiv.querySelector('pre')?.textContent || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("✅ Text copied! (QR image must be shared separately)");
+    } catch {
+      alert("Copy failed. Please manually select and copy the announcement.");
+    }
+  });
+
+  // ---------- Real-time listener ----------
+  onValue(bookingRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      const defaultBooking = {
+        date: "", day: "", start: "", end: "",
+        venue: "Forum Sba, Setia Alam", court: "", price: "", shuttle: "", host: "",
+        qrDataUrl: null, qrLabel: "",
+        players: []
+      };
+      set(bookingRef, defaultBooking);
+    } else {
+      renderFromData(data);
+    }
+  });
+
+  // Initialize
+  adminLoginCard.classList.remove('hidden');
+  setupAdminFieldListeners();
+
+  function escapeHtml(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+</script>
 </body>
 </html>
